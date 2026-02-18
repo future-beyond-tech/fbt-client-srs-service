@@ -2,11 +2,13 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
-        <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PublishTrimmed>false</PublishTrimmed>
     </PropertyGroup>
 
-   
+
+
 
     <ItemGroup>
       <ProjectReference Include="..\SRS.Application\SRS.Application.csproj" />
