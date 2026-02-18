@@ -1,0 +1,30 @@
+using Microsoft.EntityFrameworkCore;
+using SRS.Application.DTOs;
+using SRS.Application.Interfaces;
+using SRS.Domain.Enums;
+using SRS.Infrastructure.Persistence;
+
+namespace SRS.Application.Services;
+
+public class DashboardService(AppDbContext context) : IDashboardService
+{
+    public Task<DashboardDto> GetAsync()
+    {
+        var now = DateTime.UtcNow;
+        var startOfMonth = new DateTime(now.Year, now.Month, 1);
+
+        return context.Database
+            .SqlQuery<DashboardDto>(
+                $"""
+                 SELECT
+                     (SELECT COUNT(1) FROM "Vehicles") AS "TotalVehiclesPurchased",
+                     (SELECT COUNT(1) FROM "Vehicles" WHERE "Status" = {(int)VehicleStatus.Sold}) AS "TotalVehiclesSold",
+                     (SELECT COUNT(1) FROM "Vehicles" WHERE "Status" = {(int)VehicleStatus.Available}) AS "AvailableVehicles",
+                     (SELECT COALESCE(SUM("Profit"), 0) FROM "Sales") AS "TotalProfit",
+                     (SELECT COALESCE(SUM("CashAmount" + "UpiAmount" + "FinanceAmount"), 0)
+                        FROM "Sales"
+                       WHERE "SaleDate" >= {startOfMonth}) AS "SalesThisMonth"
+                 """)
+            .SingleAsync();
+    }
+}
