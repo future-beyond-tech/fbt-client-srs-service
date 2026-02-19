@@ -58,6 +58,7 @@ public class SaleService(AppDbContext context) : ISaleService
             CustomerName = dto.CustomerName.Trim(),
             CustomerPhone = dto.CustomerPhone.Trim(),
             CustomerAddress = string.IsNullOrWhiteSpace(dto.CustomerAddress) ? null : dto.CustomerAddress.Trim(),
+            CustomerPhotoUrl = dto.CustomerPhotoUrl.Trim(),
             PaymentMode = dto.PaymentMode,
             CashAmount = dto.CashAmount,
             UpiAmount = dto.UpiAmount,
@@ -151,6 +152,11 @@ public class SaleService(AppDbContext context) : ISaleService
             string.IsNullOrWhiteSpace(dto.CustomerPhone))
         {
             throw new ArgumentException("CustomerName and CustomerPhone are required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.CustomerPhotoUrl))
+        {
+            throw new ArgumentException("CustomerPhotoUrl is required.");
         }
 
         if (!Enum.IsDefined(dto.PaymentMode))
