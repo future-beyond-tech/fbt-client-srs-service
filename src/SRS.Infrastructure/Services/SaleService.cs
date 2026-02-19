@@ -18,11 +18,17 @@ public class SaleService(AppDbContext context) : ISaleService
             await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
 
         var vehicle = await context.Vehicles
+            .Include(v => v.Purchase)
             .FirstOrDefaultAsync(v => v.Id == dto.VehicleId);
 
         if (vehicle is null)
         {
             throw new KeyNotFoundException("Vehicle not found.");
+        }
+
+        if (vehicle.Purchase is null)
+        {
+            throw new InvalidOperationException("Purchase record not found for the vehicle.");
         }
 
         if (vehicle.Status != VehicleStatus.Available)
@@ -38,32 +44,20 @@ public class SaleService(AppDbContext context) : ISaleService
             throw new InvalidOperationException("Vehicle already sold.");
         }
 
-        var phone = dto.Phone.Trim();
-        var customer = await context.Customers
-            .FirstOrDefaultAsync(c => c.Phone == phone);
-
-        if (customer is null)
-        {
-            customer = new Customer
-            {
-                Name = dto.CustomerName.Trim(),
-                Phone = phone,
-                Address = dto.Address.Trim(),
-                PhotoUrl = string.IsNullOrWhiteSpace(dto.PhotoUrl) ? null : dto.PhotoUrl.Trim()
-            };
-
-            context.Customers.Add(customer);
-        }
-
         var billNumber = await GenerateBillNumberAsync();
-        var totalReceived = dto.CashAmount + dto.UpiAmount + dto.FinanceAmount;
-        var profit = totalReceived - (vehicle.BuyingCost + vehicle.Expense);
+        var cashAmount = dto.CashAmount ?? 0m;
+        var upiAmount = dto.UpiAmount ?? 0m;
+        var financeAmount = dto.FinanceAmount ?? 0m;
+        var totalReceived = cashAmount + upiAmount + financeAmount;
+        var profit = vehicle.SellingPrice - (vehicle.Purchase.BuyingCost + vehicle.Purchase.Expense);
 
         var sale = new Sale
         {
             BillNumber = billNumber,
             VehicleId = vehicle.Id,
-            CustomerId = customer.Id,
+            CustomerName = dto.CustomerName.Trim(),
+            CustomerPhone = dto.CustomerPhone.Trim(),
+            CustomerAddress = string.IsNullOrWhiteSpace(dto.CustomerAddress) ? null : dto.CustomerAddress.Trim(),
             PaymentMode = dto.PaymentMode,
             CashAmount = dto.CashAmount,
             UpiAmount = dto.UpiAmount,
@@ -93,85 +87,70 @@ public class SaleService(AppDbContext context) : ISaleService
         return new SaleResponseDto
         {
             BillNumber = sale.BillNumber,
+            VehicleId = vehicle.Id,
             Vehicle = $"{vehicle.Brand} {vehicle.Model}",
-            CustomerName = customer.Name,
+            CustomerName = sale.CustomerName,
             TotalReceived = totalReceived,
             Profit = sale.Profit,
             SaleDate = sale.SaleDate
         };
     }
 
-    public Task<SaleResponseDto?> GetByBillNumberAsync(string billNumber)
+    public Task<BillDetailDto?> GetByBillNumberAsync(int billNumber)
     {
-        var normalizedBillNumber = billNumber.Trim();
-
         return context.Sales
             .AsNoTracking()
-            .Where(s => s.BillNumber == normalizedBillNumber)
-            .Select(s => new SaleResponseDto
-            {
-                BillNumber = s.BillNumber,
-                Vehicle = s.Vehicle.Brand + " " + s.Vehicle.Model,
-                CustomerName = s.Customer.Name,
-                TotalReceived = s.CashAmount + s.UpiAmount + s.FinanceAmount,
-                Profit = s.Profit,
-                SaleDate = s.SaleDate
-            })
-            .FirstOrDefaultAsync();
-    }
-
-    public Task<BillDetailDto?> GetBillDetailAsync(string billNumber)
-    {
-        var normalizedBillNumber = billNumber.Trim();
-
-        return context.Sales
-            .AsNoTracking()
-            .Where(s => s.BillNumber == normalizedBillNumber)
+            .Include(s => s.Vehicle)
+            .ThenInclude(v => v.Purchase)
+            .Where(s => s.BillNumber == billNumber)
             .Select(s => new BillDetailDto
             {
                 BillNumber = s.BillNumber,
                 SaleDate = s.SaleDate,
+                VehicleId = s.VehicleId,
                 Brand = s.Vehicle.Brand,
                 Model = s.Vehicle.Model,
                 Year = s.Vehicle.Year,
                 RegistrationNumber = s.Vehicle.RegistrationNumber,
                 ChassisNumber = s.Vehicle.ChassisNumber,
                 EngineNumber = s.Vehicle.EngineNumber,
-                CustomerName = s.Customer.Name,
-                Phone = s.Customer.Phone,
-                Address = s.Customer.Address,
-                PhotoUrl = s.Customer.PhotoUrl,
+                SellingPrice = s.Vehicle.SellingPrice,
+                CustomerName = s.CustomerName,
+                CustomerPhone = s.CustomerPhone,
+                CustomerAddress = s.CustomerAddress,
+                PurchaseDate = s.Vehicle.Purchase.PurchaseDate,
+                BuyingCost = s.Vehicle.Purchase.BuyingCost,
+                Expense = s.Vehicle.Purchase.Expense,
+                PaymentMode = s.PaymentMode,
                 CashAmount = s.CashAmount,
                 UpiAmount = s.UpiAmount,
                 FinanceAmount = s.FinanceAmount,
                 FinanceCompany = s.FinanceCompany,
-                TotalReceived = s.CashAmount + s.UpiAmount + s.FinanceAmount
+                Profit = s.Profit,
+                TotalReceived = (s.CashAmount ?? 0m) + (s.UpiAmount ?? 0m) + (s.FinanceAmount ?? 0m)
             })
             .FirstOrDefaultAsync();
     }
 
-    private async Task<string> GenerateBillNumberAsync()
+    private async Task<int> GenerateBillNumberAsync()
     {
-        var year = DateTime.UtcNow.Year;
+        var maxBillNumber = await context.Sales
+            .MaxAsync(s => (int?)s.BillNumber);
 
-        var count = await context.Sales
-            .CountAsync(s => s.SaleDate.Year == year);
-
-        return $"SRS-{year}-{(count + 1):D4}";
+        return (maxBillNumber ?? 0) + 1;
     }
 
     private static void ValidateRequest(SaleCreateDto dto)
     {
-        if (dto.VehicleId == Guid.Empty)
+        if (dto.VehicleId <= 0)
         {
             throw new ArgumentException("VehicleId is required.");
         }
 
         if (string.IsNullOrWhiteSpace(dto.CustomerName) ||
-            string.IsNullOrWhiteSpace(dto.Phone) ||
-            string.IsNullOrWhiteSpace(dto.Address))
+            string.IsNullOrWhiteSpace(dto.CustomerPhone))
         {
-            throw new ArgumentException("CustomerName, Phone, and Address are required.");
+            throw new ArgumentException("CustomerName and CustomerPhone are required.");
         }
 
         if (!Enum.IsDefined(dto.PaymentMode))
@@ -184,12 +163,16 @@ public class SaleService(AppDbContext context) : ISaleService
             throw new ArgumentException("SaleDate is required.");
         }
 
-        if (dto.CashAmount < 0 || dto.UpiAmount < 0 || dto.FinanceAmount < 0)
+        var cashAmount = dto.CashAmount ?? 0m;
+        var upiAmount = dto.UpiAmount ?? 0m;
+        var financeAmount = dto.FinanceAmount ?? 0m;
+
+        if (cashAmount < 0 || upiAmount < 0 || financeAmount < 0)
         {
             throw new ArgumentException("Payment amounts cannot be negative.");
         }
 
-        var totalReceived = dto.CashAmount + dto.UpiAmount + dto.FinanceAmount;
+        var totalReceived = cashAmount + upiAmount + financeAmount;
         if (totalReceived <= 0)
         {
             throw new ArgumentException("At least one payment amount must be greater than zero.");
@@ -197,17 +180,15 @@ public class SaleService(AppDbContext context) : ISaleService
 
         switch (dto.PaymentMode)
         {
-            case PaymentMode.Cash when dto.CashAmount <= 0 || dto.UpiAmount != 0 || dto.FinanceAmount != 0:
+            case PaymentMode.Cash when cashAmount <= 0 || upiAmount != 0 || financeAmount != 0:
                 throw new ArgumentException("Cash mode requires only CashAmount.");
-            case PaymentMode.Upi when dto.UpiAmount <= 0 || dto.CashAmount != 0 || dto.FinanceAmount != 0:
+            case PaymentMode.UPI when upiAmount <= 0 || cashAmount != 0 || financeAmount != 0:
                 throw new ArgumentException("Upi mode requires only UpiAmount.");
-            case PaymentMode.Finance when dto.FinanceAmount <= 0 || dto.CashAmount != 0 || dto.UpiAmount != 0:
+            case PaymentMode.Finance when financeAmount <= 0 || cashAmount != 0 || upiAmount != 0:
                 throw new ArgumentException("Finance mode requires only FinanceAmount.");
-            case PaymentMode.Mixed when (dto.CashAmount > 0 ? 1 : 0) + (dto.UpiAmount > 0 ? 1 : 0) + (dto.FinanceAmount > 0 ? 1 : 0) < 2:
-                throw new ArgumentException("Mixed mode requires at least two non-zero payment amounts.");
         }
 
-        if (dto.FinanceAmount > 0 && string.IsNullOrWhiteSpace(dto.FinanceCompany))
+        if (financeAmount > 0 && string.IsNullOrWhiteSpace(dto.FinanceCompany))
         {
             throw new ArgumentException("FinanceCompany is required when FinanceAmount is used.");
         }

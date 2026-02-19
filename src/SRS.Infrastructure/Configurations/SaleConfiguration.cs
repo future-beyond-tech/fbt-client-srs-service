@@ -4,28 +4,44 @@ using SRS.Domain.Entities;
 
 namespace SRS.Infrastructure.Configurations;
 
-public class SaleConfiguration:IEntityTypeConfiguration<Sale>
+public class SaleConfiguration : IEntityTypeConfiguration<Sale>
 {
     public void Configure(EntityTypeBuilder<Sale> builder)
     {
+        builder.Property(s => s.Id)
+            .ValueGeneratedOnAdd();
+
         builder.Property(s => s.BillNumber)
-            .HasMaxLength(30)
             .IsRequired();
 
         builder.HasIndex(s => s.BillNumber)
             .IsUnique();
 
+        builder.Property(s => s.CustomerName)
+            .HasMaxLength(150)
+            .IsRequired();
+
+        builder.Property(s => s.CustomerPhone)
+            .HasMaxLength(20)
+            .IsRequired();
+
+        builder.Property(s => s.CustomerAddress)
+            .HasMaxLength(300);
+
+        builder.Property(s => s.FinanceCompany)
+            .HasMaxLength(150);
+
+        builder.HasIndex(s => s.CustomerPhone);
+        builder.HasIndex(s => s.CustomerName);
         builder.HasIndex(s => s.SaleDate);
         builder.HasIndex(s => s.VehicleId)
             .IsUnique();
 
         builder.HasOne(s => s.Vehicle)
             .WithOne(v => v.Sale)
-            .HasForeignKey<Sale>(s => s.VehicleId);
+            .HasForeignKey<Sale>(s => s.VehicleId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(s => s.Customer)
-            .WithMany(c => c.Sales)
-            .HasForeignKey(s => s.CustomerId);
         builder.Property(x => x.CashAmount)
             .HasPrecision(18, 2);
 
@@ -37,7 +53,5 @@ public class SaleConfiguration:IEntityTypeConfiguration<Sale>
 
         builder.Property(x => x.UpiAmount)
             .HasPrecision(18, 2);
-
-
     }
 }

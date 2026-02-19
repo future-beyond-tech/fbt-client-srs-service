@@ -16,6 +16,7 @@ public class SearchService(AppDbContext context) : ISearchService
 
         var normalizedKeyword = keyword.Trim();
         var likePattern = $"%{normalizedKeyword}%";
+        var hasBillNumber = int.TryParse(normalizedKeyword, out var parsedBillNumber);
         var dayStart = DateTime.TryParse(normalizedKeyword, out var date)
             ? date.Date
             : (DateTime?)null;
@@ -27,9 +28,9 @@ public class SearchService(AppDbContext context) : ISearchService
         return context.Sales
             .AsNoTracking()
             .Where(s =>
-                EF.Functions.ILike(s.BillNumber, likePattern) ||
-                EF.Functions.ILike(s.Customer.Name, likePattern) ||
-                EF.Functions.ILike(s.Customer.Phone, likePattern) ||
+                (hasBillNumber && s.BillNumber == parsedBillNumber) ||
+                EF.Functions.ILike(s.CustomerName, likePattern) ||
+                EF.Functions.ILike(s.CustomerPhone, likePattern) ||
                 EF.Functions.ILike(s.Vehicle.Brand, likePattern) ||
                 EF.Functions.ILike(s.Vehicle.Model, likePattern) ||
                 EF.Functions.ILike(s.Vehicle.RegistrationNumber, likePattern) ||
@@ -39,8 +40,8 @@ public class SearchService(AppDbContext context) : ISearchService
             .Select(s => new SearchResultDto
             {
                 BillNumber = s.BillNumber,
-                CustomerName = s.Customer.Name,
-                Phone = s.Customer.Phone,
+                CustomerName = s.CustomerName,
+                CustomerPhone = s.CustomerPhone,
                 Vehicle = s.Vehicle.Brand + " " + s.Vehicle.Model,
                 RegistrationNumber = s.Vehicle.RegistrationNumber,
                 SaleDate = s.SaleDate

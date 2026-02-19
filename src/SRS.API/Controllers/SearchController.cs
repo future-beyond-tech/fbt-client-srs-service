@@ -10,9 +10,9 @@ namespace SRS.API.Controllers;
 public class SearchController(ISearchService searchService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> Search([FromQuery] string q)
+    public async Task<IActionResult> Search([FromQuery] string? q)
     {
-        var result = await searchService.SearchAsync(q);
+        var result = await searchService.SearchAsync(q ?? string.Empty);
         return Ok(result);
     }
 }

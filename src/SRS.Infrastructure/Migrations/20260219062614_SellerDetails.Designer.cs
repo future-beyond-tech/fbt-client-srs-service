@@ -12,8 +12,8 @@ using SRS.Infrastructure.Persistence;
 namespace SRS.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260218214054_UpdateDecimalPrecision")]
-    partial class UpdateDecimalPrecision
+    [Migration("20260219062614_SellerDetails")]
+    partial class SellerDetails
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,68 +25,89 @@ namespace SRS.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("SRS.Domain.Entities.Customer", b =>
+            modelBuilder.Entity("SRS.Domain.Entities.Purchase", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("integer");
 
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("BuyingCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Name")
+                    b.Property<decimal>("Expense")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SellerAddress")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("SellerName")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
-                    b.Property<string>("Phone")
+                    b.Property<string>("SellerPhone")
                         .IsRequired()
-                        .HasMaxLength(15)
-                        .HasColumnType("character varying(15)");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
-                    b.Property<string>("PhotoUrl")
-                        .HasColumnType("text");
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name");
+                    b.HasIndex("VehicleId")
+                        .IsUnique();
 
-                    b.HasIndex("Phone");
-
-                    b.ToTable("Customers");
+                    b.ToTable("Purchases");
                 });
 
             modelBuilder.Entity("SRS.Domain.Entities.Sale", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("integer");
 
-                    b.Property<string>("BillNumber")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("CashAmount")
+                    b.Property<int>("BillNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("CashAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("CustomerAddress")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
 
-                    b.Property<Guid>("CustomerId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
-                    b.Property<decimal>("FinanceAmount")
+                    b.Property<string>("CustomerPhone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal?>("FinanceAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("FinanceCompany")
-                        .HasColumnType("text");
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.Property<int>("PaymentMode")
                         .HasColumnType("integer");
@@ -98,19 +119,21 @@ namespace SRS.Infrastructure.Migrations
                     b.Property<DateTime>("SaleDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("UpiAmount")
+                    b.Property<decimal?>("UpiAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<Guid>("VehicleId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("BillNumber")
                         .IsUnique();
 
-                    b.HasIndex("CustomerId");
+                    b.HasIndex("CustomerName");
+
+                    b.HasIndex("CustomerPhone");
 
                     b.HasIndex("SaleDate");
 
@@ -147,46 +170,37 @@ namespace SRS.Infrastructure.Migrations
 
             modelBuilder.Entity("SRS.Domain.Entities.Vehicle", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Brand")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<decimal>("BuyingCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
                     b.Property<string>("ChassisNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("EngineNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("Expense")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Model")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<DateTime>("PurchaseDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("RegistrationNumber")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<decimal>("SellingPrice")
                         .HasPrecision(18, 2)
@@ -208,32 +222,33 @@ namespace SRS.Infrastructure.Migrations
                     b.ToTable("Vehicles");
                 });
 
-            modelBuilder.Entity("SRS.Domain.Entities.Sale", b =>
+            modelBuilder.Entity("SRS.Domain.Entities.Purchase", b =>
                 {
-                    b.HasOne("SRS.Domain.Entities.Customer", "Customer")
-                        .WithMany("Sales")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("SRS.Domain.Entities.Vehicle", "Vehicle")
-                        .WithOne("Sale")
-                        .HasForeignKey("SRS.Domain.Entities.Sale", "VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .WithOne("Purchase")
+                        .HasForeignKey("SRS.Domain.Entities.Purchase", "VehicleId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Customer");
 
                     b.Navigation("Vehicle");
                 });
 
-            modelBuilder.Entity("SRS.Domain.Entities.Customer", b =>
+            modelBuilder.Entity("SRS.Domain.Entities.Sale", b =>
                 {
-                    b.Navigation("Sales");
+                    b.HasOne("SRS.Domain.Entities.Vehicle", "Vehicle")
+                        .WithOne("Sale")
+                        .HasForeignKey("SRS.Domain.Entities.Sale", "VehicleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
                 });
 
             modelBuilder.Entity("SRS.Domain.Entities.Vehicle", b =>
                 {
+                    b.Navigation("Purchase")
+                        .IsRequired();
+
                     b.Navigation("Sale");
                 });
 #pragma warning restore 612, 618

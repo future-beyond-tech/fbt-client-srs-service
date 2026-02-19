@@ -20,6 +20,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerDocumentation();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<IVehicleService, VehicleService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
