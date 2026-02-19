@@ -44,6 +44,23 @@ builder.Services.AddAuthentication("Bearer")
                 Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
         };
     });
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
+if (allowedOrigins.Length == 0)
+{
+    throw new InvalidOperationException("At least one origin must be configured under 'Cors:AllowedOrigins'.");
+}
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddAuthorization();
 
@@ -52,9 +69,13 @@ var app = builder.Build();
 var uploadPath = Path.Combine(builder.Environment.ContentRootPath, "Uploads");
 Directory.CreateDirectory(uploadPath);
 await DbInitializer.InitializeAsync(app.Services);
+app.UseCors("AllowFrontend");
 
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 
 app.UseStaticFiles(new StaticFileOptions
