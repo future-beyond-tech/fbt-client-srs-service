@@ -9,36 +9,31 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var rawConnectionString = configuration["DATABASE_URL"] 
-                                  ?? configuration.GetConnectionString("DefaultConnection");
+        var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
-        if (string.IsNullOrEmpty(rawConnectionString))
+        string? connectionString;
+
+        if (string.IsNullOrEmpty(databaseUrl))
         {
-            throw new InvalidOperationException("No connection string found!");
+            // Local development
+            connectionString = configuration.GetConnectionString("DefaultConnection");
+        }
+        else
+        {
+            // Parse Railway's URI format
+            var databaseUri = new Uri(databaseUrl);
+            var userInfo = databaseUri.UserInfo.Split(':');
+
+            connectionString = $"Host={databaseUri.Host};" +
+                               $"Port={databaseUri.Port};" +
+                               $"Database={databaseUri.AbsolutePath.TrimStart('/')};" +
+                               $"Username={userInfo[0]};" +
+                               $"Password={userInfo[1]};" +
+                               $"SSL Mode=Require;Trust Server Certificate=true;";
         }
 
-// Convert if necessary
-        var connectionString = MapRailwayConnectionString(rawConnectionString);
-
-        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
-
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(connectionString));
         return services;
-    }
-    
-    private static string MapRailwayConnectionString(string databaseUrl)
-    {
-        // If it doesn't start with postgres://, it's already a standard string or empty
-        if (!databaseUrl.StartsWith("postgres://")) 
-            return databaseUrl;
-
-        var databaseUri = new Uri(databaseUrl);
-        var userInfo = databaseUri.UserInfo.Split(':');
-
-        return $"Host={databaseUri.Host};" +
-               $"Port={databaseUri.Port};" +
-               $"Database={databaseUri.AbsolutePath.TrimStart('/')};" +
-               $"Username={userInfo[0]};" +
-               $"Password={userInfo[1]};" +
-               $"SSL Mode=Require;Trust Server Certificate=true;";
     }
 }

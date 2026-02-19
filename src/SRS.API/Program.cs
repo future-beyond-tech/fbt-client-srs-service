@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using SRS.API.Extensions;
@@ -68,5 +69,25 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
+// In Program.cs after app.Build()
+// using (var scope = app.Services.CreateScope())
+// {
+//     var services = scope.ServiceProvider;
+//     try
+//     {
+//         var context = services.GetRequiredService<AppDbContext>();
+//         if (context.Database.IsRelational())
+//         {
+//              context.Database.Migrate();
+//         }
+//         DbInitializer.InitializeAsync(services).Wait();
+//         
+//         
+//     }
+//     catch (Exception ex)
+//     {
+//         var logger = services.GetRequiredService<ILogger<Program>>();
+//         logger.LogError(ex, "An error occurred while migrating the database.");
+//     }
+// }
 app.Run();
