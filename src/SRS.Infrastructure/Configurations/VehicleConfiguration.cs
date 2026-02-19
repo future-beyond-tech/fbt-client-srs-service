@@ -4,10 +4,13 @@ using SRS.Domain.Entities;
 
 namespace SRS.Infrastructure.Configurations;
 
-public class VehicleConfiguration:IEntityTypeConfiguration<Vehicle>
+public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
 {
     public void Configure(EntityTypeBuilder<Vehicle> builder)
     {
+        builder.Property(v => v.Id)
+            .ValueGeneratedOnAdd();
+
         builder.Property(v => v.Brand)
             .HasMaxLength(100)
             .IsRequired();
@@ -17,22 +20,24 @@ public class VehicleConfiguration:IEntityTypeConfiguration<Vehicle>
             .IsRequired();
 
         builder.Property(v => v.RegistrationNumber)
-            .HasMaxLength(20)
+            .HasMaxLength(30)
             .IsRequired();
 
         builder.HasIndex(v => v.RegistrationNumber)
             .IsUnique();
 
         builder.HasIndex(v => v.Status);
-        builder.Property(x => x.BuyingCost)
+
+        builder.Property(v => v.ChassisNumber)
+            .HasMaxLength(100);
+
+        builder.Property(v => v.EngineNumber)
+            .HasMaxLength(100);
+
+        builder.Property(v => v.SellingPrice)
             .HasPrecision(18, 2);
 
-        builder.Property(x => x.Expense)
-            .HasPrecision(18, 2);
-
-        builder.Property(x => x.SellingPrice)
-            .HasPrecision(18, 2);
-
-
+        builder.Property(v => v.CreatedAt)
+            .IsRequired();
     }
 }

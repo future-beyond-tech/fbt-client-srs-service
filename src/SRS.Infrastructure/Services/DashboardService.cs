@@ -30,7 +30,7 @@ public class DashboardService(AppDbContext context) : IDashboardService
                      (SELECT COUNT(1) FROM "Vehicles" WHERE "Status" = {(int)VehicleStatus.Sold}) AS "TotalVehiclesSold",
                      (SELECT COUNT(1) FROM "Vehicles" WHERE "Status" = {(int)VehicleStatus.Available}) AS "AvailableVehicles",
                      (SELECT COALESCE(SUM("Profit"), 0) FROM "Sales") AS "TotalProfit",
-                     (SELECT COALESCE(SUM("CashAmount" + "UpiAmount" + "FinanceAmount"), 0)
+                     (SELECT COALESCE(SUM(COALESCE("CashAmount", 0) + COALESCE("UpiAmount", 0) + COALESCE("FinanceAmount", 0)), 0)
                         FROM "Sales"
                        WHERE "SaleDate" >= {startOfMonth}) AS "SalesThisMonth"
                  """)
