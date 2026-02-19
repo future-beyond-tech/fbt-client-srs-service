@@ -10,7 +10,11 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
-
+// If DefaultConnection is null (which it is on Railway), look for DATABASE_URL
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            connectionString = configuration["DATABASE_URL"];
+        }
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new InvalidOperationException("Connection string 'DefaultConnection' is required.");
