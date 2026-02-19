@@ -52,12 +52,9 @@ var uploadPath = Path.Combine(builder.Environment.ContentRootPath, "Uploads");
 Directory.CreateDirectory(uploadPath);
 await DbInitializer.InitializeAsync(app.Services);
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseStaticFiles(new StaticFileOptions
 {
