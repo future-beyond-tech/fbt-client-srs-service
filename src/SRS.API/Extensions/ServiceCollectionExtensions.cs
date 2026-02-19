@@ -20,9 +20,6 @@ public static class ServiceCollectionExtensions
 // Convert if necessary
         var connectionString = MapRailwayConnectionString(rawConnectionString);
 
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString));
-
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
         return services;
