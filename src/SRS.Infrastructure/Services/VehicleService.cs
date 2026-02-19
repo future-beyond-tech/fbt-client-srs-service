@@ -21,6 +21,7 @@ public class VehicleService(AppDbContext context) : IVehicleService
                 RegistrationNumber = v.RegistrationNumber,
                 ChassisNumber = v.ChassisNumber,
                 EngineNumber = v.EngineNumber,
+                Colour = v.Colour,
                 SellingPrice = v.SellingPrice,
                 Status = v.Status,
                 CreatedAt = v.CreatedAt
@@ -42,6 +43,7 @@ public class VehicleService(AppDbContext context) : IVehicleService
                 RegistrationNumber = v.RegistrationNumber,
                 ChassisNumber = v.ChassisNumber,
                 EngineNumber = v.EngineNumber,
+                Colour = v.Colour,
                 SellingPrice = v.SellingPrice,
                 Status = v.Status,
                 CreatedAt = v.CreatedAt

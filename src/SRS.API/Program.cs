@@ -8,6 +8,7 @@ using SRS.Application.Services;
 using SRS.Infrastructure.FileStorage;
 using SRS.Infrastructure.Persistence;
 using SRS.Infrastructure.Security;
+using SRS.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,12 +21,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerDocumentation();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<IVehicleService, VehicleService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+builder.Services.AddScoped<IWhatsAppService, TwilioWhatsAppService>();
+builder.Services.AddHttpClient<IInvoicePdfService, InvoicePdfService>();
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {

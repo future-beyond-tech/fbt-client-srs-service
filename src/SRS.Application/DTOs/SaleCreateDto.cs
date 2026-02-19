@@ -6,8 +6,9 @@ public class SaleCreateDto
 {
     public int VehicleId { get; set; }
 
-    public string CustomerName { get; set; } = null!;
-    public string CustomerPhone { get; set; } = null!;
+    public Guid? CustomerId { get; set; }
+    public string? CustomerName { get; set; }
+    public string? CustomerPhone { get; set; }
     public string? CustomerAddress { get; set; }
     public string CustomerPhotoUrl { get; set; } = null!;
 
