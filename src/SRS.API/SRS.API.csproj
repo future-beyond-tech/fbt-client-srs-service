@@ -2,11 +2,13 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
-        <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PublishTrimmed>false</PublishTrimmed>
     </PropertyGroup>
 
-   
+
+
 
     <ItemGroup>
       <ProjectReference Include="..\SRS.Application\SRS.Application.csproj" />
@@ -22,8 +24,7 @@
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
-      <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.4" />
+      <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     </ItemGroup>
 
 </Project>

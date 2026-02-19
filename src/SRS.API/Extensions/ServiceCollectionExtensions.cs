@@ -1,42 +1,39 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using SRS.Infrastructure.Persistence;
 
 namespace SRS.API.Extensions;
 
-public static class ServiceCollectionExtension
+public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services,
+    public static IServiceCollection AddApplicationServices(
+        this IServiceCollection services,
         IConfiguration configuration)
     {
-        var baseConnectionString = configuration.GetConnectionString("DefaultConnection")
-                                   ?? throw new InvalidOperationException(
-                                       "Connection string 'DefaultConnection' is required.");
-        var databaseProvider = configuration["Database:Provider"] ?? "Npgsql";
-        if (string.Equals(databaseProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
+        var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
+        string? connectionString;
+
+        if (string.IsNullOrEmpty(databaseUrl))
         {
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlite(baseConnectionString));
+            // Local development
+            connectionString = configuration.GetConnectionString("DefaultConnection");
         }
         else
         {
-            var connectionStringBuilder = new NpgsqlConnectionStringBuilder(baseConnectionString);
-            if (string.IsNullOrWhiteSpace(connectionStringBuilder.Password))
-            {
-                var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
-                if (string.IsNullOrWhiteSpace(dbPassword))
-                {
-                    throw new InvalidOperationException(
-                        "Environment variable 'DB_PASSWORD' is required for database connectivity.");
-                }
+            // Parse Railway's URI format
+            var databaseUri = new Uri(databaseUrl);
+            var userInfo = databaseUri.UserInfo.Split(':');
 
-                connectionStringBuilder.Password = dbPassword;
-            }
-
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(connectionStringBuilder.ConnectionString));
+            connectionString = $"Host={databaseUri.Host};" +
+                               $"Port={databaseUri.Port};" +
+                               $"Database={databaseUri.AbsolutePath.TrimStart('/')};" +
+                               $"Username={userInfo[0]};" +
+                               $"Password={userInfo[1]};" +
+                               $"SSL Mode=Require;Trust Server Certificate=true;";
         }
 
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(connectionString));
         return services;
     }
 }

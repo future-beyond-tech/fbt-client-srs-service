@@ -2,7 +2,8 @@ namespace SRS.Application.DTOs;
 
 public class SaleResponseDto
 {
-    public string BillNumber { get; set; } = null!;
+    public int BillNumber { get; set; }
+    public int VehicleId { get; set; }
     public string Vehicle { get; set; } = null!;
     public string CustomerName { get; set; } = null!;
     public decimal TotalReceived { get; set; }

@@ -33,21 +33,9 @@ public class SalesController(ISaleService saleService) : ControllerBase
     }
 
     [HttpGet("{billNumber}")]
-    public async Task<IActionResult> GetByBill(string billNumber)
+    public async Task<IActionResult> GetByBill(int billNumber)
     {
         var result = await saleService.GetByBillNumberAsync(billNumber);
-        if (result is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(result);
-    }
-
-    [HttpGet("{billNumber}/detail")]
-    public async Task<IActionResult> GetBillDetail(string billNumber)
-    {
-        var result = await saleService.GetBillDetailAsync(billNumber);
         if (result is null)
         {
             return NotFound();
