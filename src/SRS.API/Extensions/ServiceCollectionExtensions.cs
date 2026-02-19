@@ -9,19 +9,39 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-// If DefaultConnection is null (which it is on Railway), look for DATABASE_URL
-        if (string.IsNullOrEmpty(connectionString))
+        var rawConnectionString = configuration["DATABASE_URL"] 
+                                  ?? configuration.GetConnectionString("DefaultConnection");
+
+        if (string.IsNullOrEmpty(rawConnectionString))
         {
-            connectionString = configuration["DATABASE_URL"];
+            throw new InvalidOperationException("No connection string found!");
         }
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException("Connection string 'DefaultConnection' is required.");
-        }
+
+// Convert if necessary
+        var connectionString = MapRailwayConnectionString(rawConnectionString);
+
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseNpgsql(connectionString));
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
         return services;
+    }
+    
+    private static string MapRailwayConnectionString(string databaseUrl)
+    {
+        // If it doesn't start with postgres://, it's already a standard string or empty
+        if (!databaseUrl.StartsWith("postgres://")) 
+            return databaseUrl;
+
+        var databaseUri = new Uri(databaseUrl);
+        var userInfo = databaseUri.UserInfo.Split(':');
+
+        return $"Host={databaseUri.Host};" +
+               $"Port={databaseUri.Port};" +
+               $"Database={databaseUri.AbsolutePath.TrimStart('/')};" +
+               $"Username={userInfo[0]};" +
+               $"Password={userInfo[1]};" +
+               $"SSL Mode=Require;Trust Server Certificate=true;";
     }
 }
