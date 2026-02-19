@@ -28,6 +28,10 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.Property(s => s.CustomerAddress)
             .HasMaxLength(300);
 
+        builder.Property(s => s.CustomerPhotoUrl)
+            .HasMaxLength(500)
+            .IsRequired();
+
         builder.Property(s => s.FinanceCompany)
             .HasMaxLength(150);
 

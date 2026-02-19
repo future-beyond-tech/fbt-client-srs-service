@@ -13,6 +13,7 @@ public class Sale
     public string CustomerName { get; set; } = null!;
     public string CustomerPhone { get; set; } = null!;
     public string? CustomerAddress { get; set; }
+    public string CustomerPhotoUrl { get; set; } = null!;
 
     public PaymentMode PaymentMode { get; set; }
 
