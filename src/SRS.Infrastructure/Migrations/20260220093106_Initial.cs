@@ -29,6 +29,42 @@ namespace SRS.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "DeliveryNoteSettings",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false),
+                    ShopName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    ShopAddress = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    GSTNumber = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    ContactNumber = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
+                    FooterText = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    TermsAndConditions = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    LogoUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    SignatureLine = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DeliveryNoteSettings", x => x.Id);
+                    table.CheckConstraint("CK_DeliveryNoteSettings_Singleton", "\"Id\" = 1");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FinanceCompanies",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FinanceCompanies", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -58,11 +94,35 @@ namespace SRS.Infrastructure.Migrations
                     Colour = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     SellingPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Vehicles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PurchaseExpenses",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    VehicleId = table.Column<int>(type: "integer", nullable: false),
+                    ExpenseType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PurchaseExpenses", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PurchaseExpenses_Vehicles_VehicleId",
+                        column: x => x.VehicleId,
+                        principalTable: "Vehicles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -109,6 +169,9 @@ namespace SRS.Infrastructure.Migrations
                     DeliveryTime = table.Column<TimeSpan>(type: "interval", nullable: true),
                     WitnessName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    RcBookReceived = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    OwnershipTransferAccepted = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    VehicleAcceptedInAsIsCondition = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     Profit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false)
                 },
                 constraints: table =>
@@ -168,6 +231,27 @@ namespace SRS.Infrastructure.Migrations
                 column: "Phone");
 
             migrationBuilder.CreateIndex(
+                name: "IX_FinanceCompanies_IsActive",
+                table: "FinanceCompanies",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FinanceCompanies_Name",
+                table: "FinanceCompanies",
+                column: "Name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseExpenses_CreatedAt",
+                table: "PurchaseExpenses",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseExpenses_VehicleId",
+                table: "PurchaseExpenses",
+                column: "VehicleId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Purchases_VehicleId",
                 table: "Purchases",
                 column: "VehicleId",
@@ -194,6 +278,11 @@ namespace SRS.Infrastructure.Migrations
                 table: "Sales",
                 column: "VehicleId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Vehicles_IsDeleted",
+                table: "Vehicles",
+                column: "IsDeleted");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Vehicles_RegistrationNumber",
@@ -225,6 +314,15 @@ namespace SRS.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "DeliveryNoteSettings");
+
+            migrationBuilder.DropTable(
+                name: "FinanceCompanies");
+
+            migrationBuilder.DropTable(
+                name: "PurchaseExpenses");
+
             migrationBuilder.DropTable(
                 name: "Purchases");
 

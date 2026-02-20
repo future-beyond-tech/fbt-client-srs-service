@@ -5,7 +5,7 @@ using SRS.Application.Interfaces;
 
 namespace SRS.API.Controllers;
 
-[Authorize(Roles = "Admin")]
+
 [ApiController]
 [Route("api/vehicles")]
 public class VehiclesController(IVehicleService vehicleService) : ControllerBase
@@ -22,5 +22,63 @@ public class VehiclesController(IVehicleService vehicleService) : ControllerBase
     {
         var vehicles = await vehicleService.GetAvailableAsync();
         return Ok(vehicles);
+    }
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] VehicleUpdateDto dto)
+    {
+        try
+        {
+            var updatedVehicle = await vehicleService.UpdateVehicleAsync(id, dto);
+            return Ok(updatedVehicle);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> SoftDelete(int id)
+    {
+        try
+        {
+            await vehicleService.SoftDeleteVehicleAsync(id);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+    [Authorize(Roles = "Admin")]
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> UpdateStatus(int id, [FromBody] VehicleStatusUpdateDto dto)
+    {
+        try
+        {
+            var updatedVehicle = await vehicleService.UpdateVehicleStatusAsync(id, dto);
+            return Ok(updatedVehicle);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 }

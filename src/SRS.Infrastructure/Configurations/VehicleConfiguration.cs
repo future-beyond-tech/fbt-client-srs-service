@@ -42,5 +42,13 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
 
         builder.Property(v => v.CreatedAt)
             .IsRequired();
+
+        builder.Property(v => v.IsDeleted)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(v => v.UpdatedAt);
+
+        builder.HasIndex(v => v.IsDeleted);
     }
 }

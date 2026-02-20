@@ -27,7 +27,7 @@ public class SaleService(
 
         var vehicle = await context.Vehicles
             .Include(v => v.Purchase)
-            .FirstOrDefaultAsync(v => v.Id == dto.VehicleId);
+            .FirstOrDefaultAsync(v => v.Id == dto.VehicleId && !v.IsDeleted);
 
         if (vehicle is null)
         {

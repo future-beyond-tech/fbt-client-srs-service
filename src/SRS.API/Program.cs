@@ -1,10 +1,13 @@
 using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using SRS.API.Extensions;
 using SRS.Application.Interfaces;
 using SRS.Application.Services;
+using SRS.Application.Validators;
 using SRS.Infrastructure.Configuration;
 using SRS.Infrastructure.FileStorage;
 using SRS.Infrastructure.Persistence;
@@ -17,6 +20,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<VehicleUpdateDtoValidator>();
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services
     .AddOptions<CloudinarySettings>()
@@ -26,12 +31,23 @@ builder.Services.AddSwaggerDocumentation();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IDeliveryNoteSettingsService, DeliveryNoteSettingsService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
+builder.Services.AddScoped<IPurchaseExpenseService, PurchaseExpenseService>();
 builder.Services.AddScoped<IVehicleService, VehicleService>();
+builder.Services.AddScoped<IFinanceCompanyService, FinanceCompanyService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
-builder.Services.AddScoped<ICustomerPhotoStorageService, LocalFileStorageService>();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddScoped<ICustomerPhotoStorageService, LocalFileStorageService>();
+}
+else
+{
+    builder.Services.AddScoped<ICustomerPhotoStorageService, CloudinaryCustomerPhotoStorageService>();
+}
+
 builder.Services.AddScoped<IFileStorageService, CloudinaryFileStorageService>();
 builder.Services.AddHttpClient<IWhatsAppService, MetaWhatsAppService>();
 builder.Services.AddHttpClient<IInvoicePdfService, InvoicePdfService>();

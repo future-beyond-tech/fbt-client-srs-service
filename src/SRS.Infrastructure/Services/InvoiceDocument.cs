@@ -9,9 +9,8 @@ namespace SRS.Application.Services;
 public class InvoiceDocument(
     SaleInvoiceDto invoice,
     byte[]? customerPhotoBytes,
-    string dealershipName,
-    string thankYouNote,
-    string legalDeclaration) : IDocument
+    byte[]? shopLogoBytes,
+    DeliveryNoteSettingsDto settings) : IDocument
 {
     public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
 
@@ -25,10 +24,7 @@ public class InvoiceDocument(
 
             page.Header()
                 .PaddingBottom(8)
-                .AlignCenter()
-                .Text(dealershipName)
-                .SemiBold()
-                .FontSize(20);
+                .Element(ComposeHeader);
 
             page.Content().Column(column =>
             {
@@ -44,9 +40,40 @@ public class InvoiceDocument(
             page.Footer()
                 .PaddingTop(8)
                 .AlignCenter()
-                .Text(thankYouNote)
+                .Text(settings.FooterText ?? "Thank you for your purchase.")
                 .Italic()
                 .FontSize(9);
+        });
+    }
+
+    private void ComposeHeader(IContainer container)
+    {
+        container.Row(row =>
+        {
+            if (shopLogoBytes is { Length: > 0 })
+            {
+                row.ConstantItem(72)
+                    .Height(72)
+                    .PaddingRight(8)
+                    .Element(logo => logo.Image(shopLogoBytes).FitArea());
+            }
+
+            row.RelativeItem().AlignMiddle().Column(column =>
+            {
+                column.Spacing(2);
+                column.Item().AlignCenter().Text(settings.ShopName).SemiBold().FontSize(20);
+                column.Item().AlignCenter().Text(settings.ShopAddress).FontSize(10);
+
+                if (!string.IsNullOrWhiteSpace(settings.GSTNumber))
+                {
+                    column.Item().AlignCenter().Text($"GST: {settings.GSTNumber}").FontSize(9);
+                }
+
+                if (!string.IsNullOrWhiteSpace(settings.ContactNumber))
+                {
+                    column.Item().AlignCenter().Text($"Contact: {settings.ContactNumber}").FontSize(9);
+                }
+            });
         });
     }
 
@@ -87,7 +114,7 @@ public class InvoiceDocument(
                 {
                     if (customerPhotoBytes is { Length: > 0 })
                     {
-                        photoContainer.Image(customerPhotoBytes, ImageScaling.FitArea);
+                        photoContainer.Image(customerPhotoBytes).FitArea();
                     }
                     else
                     {
@@ -165,11 +192,15 @@ public class InvoiceDocument(
             column.Item().Text($"{GetCheckbox(invoice.RcBookReceived)} RC Book received by customer");
             column.Item().Text($"{GetCheckbox(invoice.OwnershipTransferAccepted)} Ownership transfer responsibility accepted");
             column.Item().Text($"{GetCheckbox(invoice.VehicleAcceptedInAsIsCondition)} Vehicle accepted in as-is condition");
-            column.Item().PaddingTop(4).Text(legalDeclaration);
+            column.Item().PaddingTop(4).Text(
+                settings.TermsAndConditions ??
+                "I confirm that I have received the vehicle in good condition and accepted all sale terms.");
             column.Item().PaddingTop(6).Row(row =>
             {
                 row.RelativeItem().Text("Witness: _____________________");
-                row.RelativeItem().AlignRight().Text("Customer Signature: _____________________");
+                row.RelativeItem()
+                    .AlignRight()
+                    .Text($"{settings.SignatureLine ?? "Customer Signature"}: _____________________");
             });
         });
     }

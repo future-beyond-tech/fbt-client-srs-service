@@ -16,8 +16,11 @@ public class Vehicle
     public decimal SellingPrice { get; set; }
 
     public VehicleStatus Status { get; set; } = VehicleStatus.Available;
+    public bool IsDeleted { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     public Purchase Purchase { get; set; } = null!;
     public Sale? Sale { get; set; }
+    public ICollection<PurchaseExpense> PurchaseExpenses { get; set; } = new List<PurchaseExpense>();
 }
