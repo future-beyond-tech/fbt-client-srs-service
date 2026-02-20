@@ -33,6 +33,9 @@ public class SaleInvoiceDto
     public decimal? UpiAmount { get; set; }
     public decimal? FinanceAmount { get; set; }
     public string? FinanceCompany { get; set; }
+    public bool RcBookReceived { get; set; }
+    public bool OwnershipTransferAccepted { get; set; }
+    public bool VehicleAcceptedInAsIsCondition { get; set; }
 
     public decimal Profit { get; set; }
 }

@@ -24,6 +24,9 @@ public class Sale
     public TimeSpan? DeliveryTime { get; set; }
     public string? WitnessName { get; set; }
     public string? Notes { get; set; }
+    public bool RcBookReceived { get; set; } = false;
+    public bool OwnershipTransferAccepted { get; set; } = false;
+    public bool VehicleAcceptedInAsIsCondition { get; set; } = false;
 
     public decimal Profit { get; set; }
 

@@ -17,6 +17,9 @@ public class SaleCreateDto
     public decimal? UpiAmount { get; set; }
     public decimal? FinanceAmount { get; set; }
     public string? FinanceCompany { get; set; }
+    public bool RcBookReceived { get; set; }
+    public bool OwnershipTransferAccepted { get; set; }
+    public bool VehicleAcceptedInAsIsCondition { get; set; }
 
     public DateTime SaleDate { get; set; }
 }

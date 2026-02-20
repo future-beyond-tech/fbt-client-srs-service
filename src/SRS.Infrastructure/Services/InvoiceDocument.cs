@@ -2,6 +2,7 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using SRS.Application.DTOs;
+using SRS.Domain.Enums;
 
 namespace SRS.Application.Services;
 
@@ -37,7 +38,7 @@ public class InvoiceDocument(
                 column.Item().Element(ComposeCustomerSection);
                 column.Item().Element(ComposeVehicleSection);
                 column.Item().Element(ComposePaymentSection);
-                column.Item().Element(ComposeDeclarationSection);
+                column.Item().Element(ComposeDeliveryLegalDeclarationSection);
             });
 
             page.Footer()
@@ -140,9 +141,13 @@ public class InvoiceDocument(
     {
         container.Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Column(column =>
         {
-            column.Spacing(4);
+            column.Spacing(6);
             column.Item().Text("Payment Details").SemiBold().FontSize(12);
-            column.Item().Text($"Mode: {invoice.PaymentMode}");
+            column.Item().Text($"{GetCheckbox(invoice.PaymentMode == PaymentMode.Cash)} Cash");
+            column.Item().Text($"{GetCheckbox(invoice.PaymentMode == PaymentMode.UPI)} UPI");
+            column.Item().Text(
+                $"{GetCheckbox(invoice.PaymentMode == PaymentMode.Finance)} Finance" +
+                $"{(invoice.PaymentMode == PaymentMode.Finance && !string.IsNullOrWhiteSpace(invoice.FinanceCompany) ? $" - {invoice.FinanceCompany}" : string.Empty)}");
             column.Item().Text($"Cash: {FormatAmount(invoice.CashAmount ?? 0m)}");
             column.Item().Text($"UPI: {FormatAmount(invoice.UpiAmount ?? 0m)}");
             column.Item().Text($"Finance: {FormatAmount(invoice.FinanceAmount ?? 0m)}");
@@ -151,13 +156,16 @@ public class InvoiceDocument(
         });
     }
 
-    private void ComposeDeclarationSection(IContainer container)
+    private void ComposeDeliveryLegalDeclarationSection(IContainer container)
     {
         container.Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Column(column =>
         {
             column.Spacing(4);
-            column.Item().Text("Declaration").SemiBold().FontSize(12);
-            column.Item().Text(legalDeclaration);
+            column.Item().Text("Delivery & Legal Declaration").SemiBold().FontSize(12);
+            column.Item().Text($"{GetCheckbox(invoice.RcBookReceived)} RC Book received by customer");
+            column.Item().Text($"{GetCheckbox(invoice.OwnershipTransferAccepted)} Ownership transfer responsibility accepted");
+            column.Item().Text($"{GetCheckbox(invoice.VehicleAcceptedInAsIsCondition)} Vehicle accepted in as-is condition");
+            column.Item().PaddingTop(4).Text(legalDeclaration);
             column.Item().PaddingTop(6).Row(row =>
             {
                 row.RelativeItem().Text("Witness: _____________________");
@@ -182,6 +190,8 @@ public class InvoiceDocument(
     }
 
     private static string FormatAmount(decimal value) => $"Rs. {value:0.00}";
+
+    private static string GetCheckbox(bool isChecked) => isChecked ? "☑" : "☐";
 
     private static string FormatTime(TimeSpan? deliveryTime)
     {

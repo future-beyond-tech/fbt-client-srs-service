@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using SRS.Application.DTOs;
 using SRS.Application.Interfaces;
 
@@ -35,6 +36,10 @@ public class SalesController(ISaleService saleService) : ControllerBase
             return NotFound(new { message = ex.Message });
         }
         catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (ValidationException ex)
         {
             return BadRequest(new { message = ex.Message });
         }
