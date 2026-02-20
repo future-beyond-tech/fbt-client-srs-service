@@ -4,7 +4,7 @@ using SRS.Application.Interfaces;
 using SRS.Domain.Enums;
 using SRS.Infrastructure.Persistence;
 
-namespace SRS.Application.Services;
+namespace SRS.Infrastructure.Services;
 
 public class VehicleService(AppDbContext context) : IVehicleService
 {
@@ -21,6 +21,7 @@ public class VehicleService(AppDbContext context) : IVehicleService
                 RegistrationNumber = v.RegistrationNumber,
                 ChassisNumber = v.ChassisNumber,
                 EngineNumber = v.EngineNumber,
+                Colour = v.Colour,
                 SellingPrice = v.SellingPrice,
                 Status = v.Status,
                 CreatedAt = v.CreatedAt
@@ -42,6 +43,7 @@ public class VehicleService(AppDbContext context) : IVehicleService
                 RegistrationNumber = v.RegistrationNumber,
                 ChassisNumber = v.ChassisNumber,
                 EngineNumber = v.EngineNumber,
+                Colour = v.Colour,
                 SellingPrice = v.SellingPrice,
                 Status = v.Status,
                 CreatedAt = v.CreatedAt

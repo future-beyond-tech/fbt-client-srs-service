@@ -53,13 +53,23 @@ Now you can test any protected endpoint:
 - The lock icon 🔒 next to each endpoint will appear closed/locked
 - All requests will automatically include your JWT token in the Authorization header
 - You can test:
-  - `GET /api/vehicles` - Get all vehicles
-  - `POST /api/vehicles` - Create a vehicle
-  - `GET /api/sales` - Get all sales
-  - `POST /api/sales` - Create a sale
-  - `GET /api/dashboard` - Get dashboard data
-  - `GET /api/search` - Search functionality
-  - `POST /api/upload` - Upload files
+  - **Vehicles:**
+    - `GET /api/vehicles` - Get all vehicles
+    - `GET /api/vehicles/available` - Get only available vehicles
+  - **Purchases:**
+    - `GET /api/purchases` - Get all purchase records
+    - `GET /api/purchases/{id}` - Get specific purchase details
+    - `POST /api/purchases` - Create a new purchase (adds vehicle to inventory)
+  - **Sales:**
+    - `POST /api/sales` - Create a new sale
+    - `GET /api/sales/{billNumber}` - Get sale details by bill number
+    - `GET /api/sales/{billNumber}/invoice` - Get invoice details
+    - `POST /api/sales/{billNumber}/send-invoice` - Send invoice via WhatsApp
+  - **Dashboard & Search:**
+    - `GET /api/dashboard` - Get business dashboard metrics
+    - `GET /api/search?q={query}` - Search across vehicles and sales
+  - **Upload:**
+    - `POST /api/upload` - Upload customer photo (multipart/form-data)
 
 ### Step 6: Logout (Optional)
 
@@ -85,6 +95,108 @@ To clear the authorization:
    - All controllers have `[Authorize(Roles = "Admin")]` attribute
    - Only authenticated Admin users can access endpoints
    - Auth controller login endpoint is public (no authorize attribute)
+
+### Request & Response DTOs
+
+To help you test, here are the primary DTO structures:
+
+#### 1. Authentication (`POST /api/auth/login`)
+**Request (LoginRequest):**
+```json
+{
+  "username": "admin",
+  "password": "password123"
+}
+```
+
+#### 2. Purchases (`POST /api/purchases`)
+**Request (PurchaseCreateDto):**
+```json
+{
+  "brand": "Honda",
+  "model": "Activa 6G",
+  "year": 2023,
+  "registrationNumber": "TN-01-AB-1234",
+  "chassisNumber": "MD2JF...",
+  "engineNumber": "JF51E...",
+  "colour": "Black",
+  "sellingPrice": 85000,
+  "sellerName": "John Doe",
+  "sellerPhone": "9876543210",
+  "sellerAddress": "Chennai",
+  "buyingCost": 70000,
+  "expense": 2000,
+  "purchaseDate": "2024-02-19T10:00:00Z"
+}
+```
+
+#### 3. Sales (`POST /api/sales`)
+**Request (SaleCreateDto):**
+```json
+{
+  "vehicleId": 1,
+  "customerName": "Jane Smith",
+  "customerPhone": "9123456789",
+  "paymentMode": 1, 
+  "cashAmount": 85000,
+  "saleDate": "2024-02-19T15:00:00Z"
+}
+```
+*Note: `paymentMode`: 1 (Cash), 2 (UPI), 3 (Finance)*
+
+#### 4. Dashboard Statistics (`GET /api/dashboard`)
+**Response (DashboardDto):**
+```json
+{
+  "totalVehiclesPurchased": 10,
+  "totalVehiclesSold": 5,
+  "availableVehicles": 5,
+  "totalProfit": 75000,
+  "salesThisMonth": 250000
+}
+```
+
+#### 5. Search Results (`GET /api/search?q=...`)
+**Response (List<SearchResultDto>):**
+```json
+[
+  {
+    "billNumber": 1001,
+    "customerName": "Jane Smith",
+    "customerPhone": "9123456789",
+    "vehicle": "Honda Activa 6G",
+    "registrationNumber": "TN-01-AB-1234",
+    "saleDate": "2024-02-19T15:00:00Z"
+  }
+]
+```
+
+#### 6. Send Invoice (`POST /api/sales/{billNumber}/send-invoice`)
+**Response (SendInvoiceResponseDto):**
+```json
+{
+  "billNumber": 1001,
+  "pdfUrl": "https://cloudinary.com/...",
+  "status": "Sent Successfully"
+}
+```
+
+#### 7. Sale Invoice Details (`GET /api/sales/{billNumber}/invoice`)
+**Response (SaleInvoiceDto):**
+```json
+{
+  "billNumber": 1001,
+  "saleDate": "2024-02-19T15:00:00Z",
+  "customerName": "Jane Smith",
+  "phone": "9123456789",
+  "vehicleBrand": "Honda",
+  "vehicleModel": "Activa 6G",
+  "registrationNumber": "TN-01-AB-1234",
+  "sellingPrice": 85000,
+  "paymentMode": 1,
+  "cashAmount": 85000
+}
+```
 
 ### JWT Configuration:
 

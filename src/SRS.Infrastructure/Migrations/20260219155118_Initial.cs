@@ -7,11 +7,27 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace SRS.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class SellerDetails : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Customers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    Phone = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Address = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    PhotoUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Customers", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
@@ -39,6 +55,7 @@ namespace SRS.Infrastructure.Migrations
                     RegistrationNumber = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     ChassisNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     EngineNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Colour = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     SellingPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -82,20 +99,27 @@ namespace SRS.Infrastructure.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     BillNumber = table.Column<int>(type: "integer", nullable: false),
                     VehicleId = table.Column<int>(type: "integer", nullable: false),
-                    CustomerName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
-                    CustomerPhone = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    CustomerAddress = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    CustomerId = table.Column<Guid>(type: "uuid", nullable: false),
                     PaymentMode = table.Column<int>(type: "integer", nullable: false),
                     CashAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     UpiAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     FinanceAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     FinanceCompany = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
                     SaleDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DeliveryTime = table.Column<TimeSpan>(type: "interval", nullable: true),
+                    WitnessName = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
+                    Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Profit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Sales", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Sales_Customers_CustomerId",
+                        column: x => x.CustomerId,
+                        principalTable: "Customers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Sales_Vehicles_VehicleId",
                         column: x => x.VehicleId,
@@ -103,6 +127,45 @@ namespace SRS.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "WhatsAppMessages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CustomerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SaleId = table.Column<int>(type: "integer", nullable: false),
+                    PhoneNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    MediaUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WhatsAppMessages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WhatsAppMessages_Customers_CustomerId",
+                        column: x => x.CustomerId,
+                        principalTable: "Customers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_WhatsAppMessages_Sales_SaleId",
+                        column: x => x.SaleId,
+                        principalTable: "Sales",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Customers_Name",
+                table: "Customers",
+                column: "Name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Customers_Phone",
+                table: "Customers",
+                column: "Phone");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Purchases_VehicleId",
@@ -117,14 +180,9 @@ namespace SRS.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Sales_CustomerName",
+                name: "IX_Sales_CustomerId",
                 table: "Sales",
-                column: "CustomerName");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Sales_CustomerPhone",
-                table: "Sales",
-                column: "CustomerPhone");
+                column: "CustomerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Sales_SaleDate",
@@ -147,6 +205,21 @@ namespace SRS.Infrastructure.Migrations
                 name: "IX_Vehicles_Status",
                 table: "Vehicles",
                 column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WhatsAppMessages_CreatedAt",
+                table: "WhatsAppMessages",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WhatsAppMessages_CustomerId",
+                table: "WhatsAppMessages",
+                column: "CustomerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WhatsAppMessages_SaleId",
+                table: "WhatsAppMessages",
+                column: "SaleId");
         }
 
         /// <inheritdoc />
@@ -156,10 +229,16 @@ namespace SRS.Infrastructure.Migrations
                 name: "Purchases");
 
             migrationBuilder.DropTable(
+                name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "WhatsAppMessages");
+
+            migrationBuilder.DropTable(
                 name: "Sales");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "Customers");
 
             migrationBuilder.DropTable(
                 name: "Vehicles");

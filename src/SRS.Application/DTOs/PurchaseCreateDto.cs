@@ -9,6 +9,7 @@ public class PurchaseCreateDto
     public string RegistrationNumber { get; set; } = null!;
     public string? ChassisNumber { get; set; }
     public string? EngineNumber { get; set; }
+    public string? Colour { get; set; }
     public decimal SellingPrice { get; set; }
 
     public string SellerName { get; set; } = null!;

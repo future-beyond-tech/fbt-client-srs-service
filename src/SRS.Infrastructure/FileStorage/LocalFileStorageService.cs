@@ -4,7 +4,7 @@ using SRS.Application.Interfaces;
 
 namespace SRS.Infrastructure.FileStorage;
 
-public class LocalFileStorageService(IWebHostEnvironment environment) : IFileStorageService
+public class LocalFileStorageService(IWebHostEnvironment environment) : ICustomerPhotoStorageService
 {
     private const long MaxFileSize = 2 * 1024 * 1024;
 

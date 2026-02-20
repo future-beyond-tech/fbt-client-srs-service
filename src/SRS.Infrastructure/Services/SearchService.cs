@@ -3,7 +3,7 @@ using SRS.Application.DTOs;
 using SRS.Application.Interfaces;
 using SRS.Infrastructure.Persistence;
 
-namespace SRS.Application.Services;
+namespace SRS.Infrastructure.Services;
 
 public class SearchService(AppDbContext context) : ISearchService
 {
@@ -29,8 +29,8 @@ public class SearchService(AppDbContext context) : ISearchService
             .AsNoTracking()
             .Where(s =>
                 (hasBillNumber && s.BillNumber == parsedBillNumber) ||
-                EF.Functions.ILike(s.CustomerName, likePattern) ||
-                EF.Functions.ILike(s.CustomerPhone, likePattern) ||
+                EF.Functions.ILike(s.Customer.Name, likePattern) ||
+                EF.Functions.ILike(s.Customer.Phone, likePattern) ||
                 EF.Functions.ILike(s.Vehicle.Brand, likePattern) ||
                 EF.Functions.ILike(s.Vehicle.Model, likePattern) ||
                 EF.Functions.ILike(s.Vehicle.RegistrationNumber, likePattern) ||
@@ -40,8 +40,8 @@ public class SearchService(AppDbContext context) : ISearchService
             .Select(s => new SearchResultDto
             {
                 BillNumber = s.BillNumber,
-                CustomerName = s.CustomerName,
-                CustomerPhone = s.CustomerPhone,
+                CustomerName = s.Customer.Name,
+                CustomerPhone = s.Customer.Phone,
                 Vehicle = s.Vehicle.Brand + " " + s.Vehicle.Model,
                 RegistrationNumber = s.Vehicle.RegistrationNumber,
                 SaleDate = s.SaleDate
