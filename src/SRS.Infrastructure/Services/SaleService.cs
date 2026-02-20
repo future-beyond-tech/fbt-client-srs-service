@@ -1,4 +1,5 @@
 using System.Data;
+using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using SRS.Application.DTOs;
@@ -71,6 +72,9 @@ public class SaleService(
             FinanceAmount = dto.FinanceAmount,
             FinanceCompany = string.IsNullOrWhiteSpace(dto.FinanceCompany) ? null : dto.FinanceCompany.Trim(),
             SaleDate = dto.SaleDate,
+            RcBookReceived = dto.RcBookReceived,
+            OwnershipTransferAccepted = dto.OwnershipTransferAccepted,
+            VehicleAcceptedInAsIsCondition = dto.VehicleAcceptedInAsIsCondition,
             Profit = profit
         };
 
@@ -314,6 +318,9 @@ public class SaleService(
                     UpiAmount = s.UpiAmount,
                     FinanceAmount = s.FinanceAmount,
                     FinanceCompany = s.FinanceCompany,
+                    RcBookReceived = s.RcBookReceived,
+                    OwnershipTransferAccepted = s.OwnershipTransferAccepted,
+                    VehicleAcceptedInAsIsCondition = s.VehicleAcceptedInAsIsCondition,
                     Profit = s.Profit
                 }
             });
@@ -456,6 +463,21 @@ public class SaleService(
         if (dto.SaleDate == default)
         {
             throw new ArgumentException("SaleDate is required.");
+        }
+
+        if (!dto.RcBookReceived)
+        {
+            throw new ValidationException("Customer must acknowledge RC Book receipt before sale can be completed.");
+        }
+
+        if (!dto.OwnershipTransferAccepted)
+        {
+            throw new ValidationException("Customer must accept ownership transfer responsibility before sale can be completed.");
+        }
+
+        if (!dto.VehicleAcceptedInAsIsCondition)
+        {
+            throw new ValidationException("Customer must accept vehicle condition before sale can be completed.");
         }
 
         var cashAmount = dto.CashAmount ?? 0m;

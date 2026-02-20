@@ -20,6 +20,18 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.Property(s => s.CustomerId)
             .IsRequired();
 
+        builder.Property(s => s.RcBookReceived)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(s => s.OwnershipTransferAccepted)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(s => s.VehicleAcceptedInAsIsCondition)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.Property(s => s.FinanceCompany)
             .HasMaxLength(150);
 
