@@ -7,7 +7,7 @@ namespace SRS.API.Controllers;
 [Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/upload")]
-public class UploadController(IFileStorageService fileStorageService) : ControllerBase
+public class UploadController(ICustomerPhotoStorageService fileStorageService) : ControllerBase
 {
     private const long MaxFileSize = 2 * 1024 * 1024;
 

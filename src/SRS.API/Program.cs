@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using SRS.API.Extensions;
 using SRS.Application.Interfaces;
 using SRS.Application.Services;
+using SRS.Infrastructure.Configuration;
 using SRS.Infrastructure.FileStorage;
 using SRS.Infrastructure.Persistence;
 using SRS.Infrastructure.Security;
@@ -17,6 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers();
 builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services
+    .AddOptions<CloudinarySettings>()
+    .Bind(builder.Configuration.GetSection(CloudinarySettings.SectionName));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerDocumentation();
 builder.Services.AddScoped<IJwtService, JwtService>();
@@ -27,9 +31,9 @@ builder.Services.AddScoped<IVehicleService, VehicleService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
-builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
-builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
-builder.Services.AddScoped<IWhatsAppService, TwilioWhatsAppService>();
+builder.Services.AddScoped<ICustomerPhotoStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<IFileStorageService, CloudinaryFileStorageService>();
+builder.Services.AddHttpClient<IWhatsAppService, MetaWhatsAppService>();
 builder.Services.AddHttpClient<IInvoicePdfService, InvoicePdfService>();
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>

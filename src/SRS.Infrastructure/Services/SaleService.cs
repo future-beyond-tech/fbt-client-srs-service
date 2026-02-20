@@ -12,7 +12,7 @@ namespace SRS.Infrastructure.Services;
 public class SaleService(
     AppDbContext context,
     IInvoicePdfService invoicePdfService,
-    ICloudinaryService cloudinaryService,
+    IFileStorageService fileStorageService,
     IWhatsAppService whatsAppService) : ISaleService
 {
     private static readonly Regex E164PhoneRegex = new(@"^\+[1-9]\d{7,14}$", RegexOptions.Compiled);
@@ -237,7 +237,9 @@ public class SaleService(
 
             var pdfBytes = await invoicePdfService.GenerateAsync(invoiceResult.Invoice, cancellationToken);
             var fileName = $"invoice-{invoiceResult.Invoice.BillNumber}-{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
-            mediaUrl = await cloudinaryService.UploadPdfAsync(pdfBytes, fileName, cancellationToken);
+
+            await using var invoiceStream = new MemoryStream(pdfBytes, writable: false);
+            mediaUrl = await fileStorageService.UploadAsync(invoiceStream, fileName, cancellationToken);
 
             await whatsAppService.SendInvoiceAsync(
                 normalizedPhone,
@@ -342,25 +344,39 @@ public class SaleService(
     {
         var customerPhotoUrl = dto.CustomerPhotoUrl.Trim();
 
+        Customer? existingCustomer = null;
+
+        // 1️⃣ If CustomerId provided → try to find
         if (dto.CustomerId.HasValue)
         {
-            var existingCustomer = await context.Customers
+            existingCustomer = await context.Customers
                 .FirstOrDefaultAsync(c => c.Id == dto.CustomerId.Value);
+        }
 
-            if (existingCustomer is null)
-            {
-                throw new KeyNotFoundException("Customer not found.");
-            }
+        // 2️⃣ If not found by I'd, try to find by Phone (avoid duplicates)
+        if (existingCustomer is null && !string.IsNullOrWhiteSpace(dto.CustomerPhone))
+        {
+            var normalizedPhone = dto.CustomerPhone.Trim();
 
+            existingCustomer = await context.Customers
+                .FirstOrDefaultAsync(c => c.Phone == normalizedPhone);
+        }
+
+        // 3️⃣ If found → update a photo and return
+        if (existingCustomer is not null)
+        {
             existingCustomer.PhotoUrl = customerPhotoUrl;
             return existingCustomer;
         }
 
+        // 4️⃣ Else create new
         var newCustomer = new Customer
         {
             Name = dto.CustomerName!.Trim(),
             Phone = dto.CustomerPhone!.Trim(),
-            Address = string.IsNullOrWhiteSpace(dto.CustomerAddress) ? null : dto.CustomerAddress.Trim(),
+            Address = string.IsNullOrWhiteSpace(dto.CustomerAddress)
+                ? null
+                : dto.CustomerAddress.Trim(),
             PhotoUrl = customerPhotoUrl,
             CreatedAt = DateTime.UtcNow
         };
@@ -457,15 +473,20 @@ public class SaleService(
             throw new ArgumentException("At least one payment amount must be greater than zero.");
         }
 
-        switch (dto.PaymentMode)
+        if (dto.PaymentMode == PaymentMode.Finance)
         {
-            case PaymentMode.Cash when cashAmount <= 0 || upiAmount != 0 || financeAmount != 0:
-                throw new ArgumentException("Cash mode requires only CashAmount.");
-            case PaymentMode.UPI when upiAmount <= 0 || cashAmount != 0 || financeAmount != 0:
-                throw new ArgumentException("Upi mode requires only UpiAmount.");
-            case PaymentMode.Finance when financeAmount <= 0 || cashAmount != 0 || upiAmount != 0:
-                throw new ArgumentException("Finance mode requires only FinanceAmount.");
+            if (financeAmount <= 0)
+                throw new ArgumentException("FinanceAmount is required for Finance mode.");
+
+            if (string.IsNullOrWhiteSpace(dto.FinanceCompany))
+                throw new ArgumentException("FinanceCompany is required for Finance mode.");
         }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(dto.FinanceCompany))
+                throw new ArgumentException("FinanceCompany is allowed only for Finance mode.");
+        }
+
 
         if (financeAmount > 0 && string.IsNullOrWhiteSpace(dto.FinanceCompany))
         {

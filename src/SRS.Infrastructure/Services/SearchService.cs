@@ -3,7 +3,7 @@ using SRS.Application.DTOs;
 using SRS.Application.Interfaces;
 using SRS.Infrastructure.Persistence;
 
-namespace SRS.Application.Services;
+namespace SRS.Infrastructure.Services;
 
 public class SearchService(AppDbContext context) : ISearchService
 {

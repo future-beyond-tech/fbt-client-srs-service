@@ -4,7 +4,7 @@ using SRS.Application.Interfaces;
 using SRS.Domain.Enums;
 using SRS.Infrastructure.Persistence;
 
-namespace SRS.Application.Services;
+namespace SRS.Infrastructure.Services;
 
 public class VehicleService(AppDbContext context) : IVehicleService
 {
