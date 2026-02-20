@@ -80,11 +80,16 @@ Directory.CreateDirectory(uploadPath);
 await DbInitializer.InitializeAsync(app.Services);
 app.UseCors("AllowFrontend");
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// if (app.Environment.IsDevelopment())
+// {
+//     app.UseSwagger();
+//     app.UseSwaggerUI();
+// }
+
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 
 app.UseStaticFiles(new StaticFileOptions
