@@ -34,6 +34,9 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
         builder.Property(v => v.EngineNumber)
             .HasMaxLength(100);
 
+        builder.Property(v => v.Colour)
+            .HasMaxLength(50);
+
         builder.Property(v => v.SellingPrice)
             .HasPrecision(18, 2);
 

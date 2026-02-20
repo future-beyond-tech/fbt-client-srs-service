@@ -19,10 +19,12 @@ public class BillDetailDto
     public string CustomerName { get; set; } = null!;
     public string CustomerPhone { get; set; } = null!;
     public string? CustomerAddress { get; set; }
+    public string? CustomerPhotoUrl { get; set; }
 
     public DateTime PurchaseDate { get; set; }
     public decimal BuyingCost { get; set; }
     public decimal Expense { get; set; }
+    public string? Colour { get; set; }
 
     public PaymentMode PaymentMode { get; set; }
     public decimal? CashAmount { get; set; }

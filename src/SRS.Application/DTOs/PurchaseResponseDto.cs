@@ -9,6 +9,7 @@ public class PurchaseResponseDto
     public string Model { get; set; } = null!;
     public int Year { get; set; }
     public string RegistrationNumber { get; set; } = null!;
+    public string? Colour { get; set; }
     public decimal SellingPrice { get; set; }
 
     public string SellerName { get; set; } = null!;

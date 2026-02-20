@@ -10,10 +10,8 @@ public class Sale
     public int VehicleId { get; set; }
     public Vehicle Vehicle { get; set; } = null!;
 
-    public string CustomerName { get; set; } = null!;
-    public string CustomerPhone { get; set; } = null!;
-    public string? CustomerAddress { get; set; }
-    public string CustomerPhotoUrl { get; set; } = null!;
+    public Guid CustomerId { get; set; }
+    public Customer Customer { get; set; } = null!;
 
     public PaymentMode PaymentMode { get; set; }
 
@@ -23,6 +21,14 @@ public class Sale
     public string? FinanceCompany { get; set; }
 
     public DateTime SaleDate { get; set; }
+    public TimeSpan? DeliveryTime { get; set; }
+    public string? WitnessName { get; set; }
+    public string? Notes { get; set; }
+    public bool RcBookReceived { get; set; } = false;
+    public bool OwnershipTransferAccepted { get; set; } = false;
+    public bool VehicleAcceptedInAsIsCondition { get; set; } = false;
 
     public decimal Profit { get; set; }
+
+    public ICollection<WhatsAppMessage> WhatsAppMessages { get; set; } = new List<WhatsAppMessage>();
 }

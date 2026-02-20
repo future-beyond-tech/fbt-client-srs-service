@@ -17,26 +17,31 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.HasIndex(s => s.BillNumber)
             .IsUnique();
 
-        builder.Property(s => s.CustomerName)
-            .HasMaxLength(150)
+        builder.Property(s => s.CustomerId)
             .IsRequired();
 
-        builder.Property(s => s.CustomerPhone)
-            .HasMaxLength(20)
-            .IsRequired();
+        builder.Property(s => s.RcBookReceived)
+            .IsRequired()
+            .HasDefaultValue(false);
 
-        builder.Property(s => s.CustomerAddress)
-            .HasMaxLength(300);
+        builder.Property(s => s.OwnershipTransferAccepted)
+            .IsRequired()
+            .HasDefaultValue(false);
 
-        builder.Property(s => s.CustomerPhotoUrl)
-            .HasMaxLength(500)
-            .IsRequired();
+        builder.Property(s => s.VehicleAcceptedInAsIsCondition)
+            .IsRequired()
+            .HasDefaultValue(false);
 
         builder.Property(s => s.FinanceCompany)
             .HasMaxLength(150);
 
-        builder.HasIndex(s => s.CustomerPhone);
-        builder.HasIndex(s => s.CustomerName);
+        builder.Property(s => s.WitnessName)
+            .HasMaxLength(150);
+
+        builder.Property(s => s.Notes)
+            .HasMaxLength(1000);
+
+        builder.HasIndex(s => s.CustomerId);
         builder.HasIndex(s => s.SaleDate);
         builder.HasIndex(s => s.VehicleId)
             .IsUnique();
@@ -44,6 +49,11 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.HasOne(s => s.Vehicle)
             .WithOne(v => v.Sale)
             .HasForeignKey<Sale>(s => s.VehicleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(s => s.Customer)
+            .WithMany(c => c.Sales)
+            .HasForeignKey(s => s.CustomerId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(x => x.CashAmount)

@@ -1,4 +1,5 @@
 using Microsoft.OpenApi;
+using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 
 namespace SRS.API.Extensions;
