@@ -29,6 +29,8 @@ public class Sale
     public bool VehicleAcceptedInAsIsCondition { get; set; } = false;
 
     public decimal Profit { get; set; }
+    public string? InvoicePdfUrl { get; set; }
+    public DateTime? InvoiceGeneratedAt { get; set; }
 
     public ICollection<WhatsAppMessage> WhatsAppMessages { get; set; } = new List<WhatsAppMessage>();
 }

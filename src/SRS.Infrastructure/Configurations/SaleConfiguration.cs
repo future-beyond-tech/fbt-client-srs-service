@@ -41,6 +41,9 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.Property(s => s.Notes)
             .HasMaxLength(1000);
 
+        builder.Property(s => s.InvoicePdfUrl)
+            .HasMaxLength(1000);
+
         builder.HasIndex(s => s.CustomerId);
         builder.HasIndex(s => s.SaleDate);
         builder.HasIndex(s => s.VehicleId)

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SRS.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using SRS.Infrastructure.Persistence;
 namespace SRS.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260220234520_AddVehiclePhotos")]
+    partial class AddVehiclePhotos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -245,13 +248,6 @@ namespace SRS.Infrastructure.Migrations
                     b.Property<string>("FinanceCompany")
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
-
-                    b.Property<DateTime?>("InvoiceGeneratedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("InvoicePdfUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)

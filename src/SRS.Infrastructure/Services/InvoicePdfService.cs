@@ -1,15 +1,20 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 using SRS.Application.DTOs;
 using SRS.Application.Interfaces;
+using SRS.Domain.Entities;
+using SRS.Infrastructure.Persistence;
 
 namespace SRS.Application.Services;
 
 public class InvoicePdfService(
+    AppDbContext context,
     HttpClient httpClient,
     IDeliveryNoteSettingsService deliveryNoteSettingsService,
+    IFileStorageService fileStorageService,
     IWebHostEnvironment environment,
     ILogger<InvoicePdfService> logger) : IInvoicePdfService
 {
@@ -31,6 +36,44 @@ public class InvoicePdfService(
             settings);
 
         return document.GeneratePdf();
+    }
+
+    public async Task<string> GenerateInvoiceAsync(int billNumber)
+    {
+        var sale = await context.Sales
+            .Include(s => s.Customer)
+            .Include(s => s.Vehicle)
+            .FirstOrDefaultAsync(s => s.BillNumber == billNumber);
+
+        if (sale is null)
+        {
+            throw new KeyNotFoundException("Invoice not found.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(sale.InvoicePdfUrl))
+        {
+            if (!sale.InvoiceGeneratedAt.HasValue)
+            {
+                sale.InvoiceGeneratedAt = DateTime.UtcNow;
+                await context.SaveChangesAsync();
+            }
+
+            return sale.InvoicePdfUrl;
+        }
+
+        var invoice = BuildInvoiceDto(sale);
+        var pdfBytes = await GenerateAsync(invoice);
+        var fileName = $"invoice-{billNumber}-{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
+
+        await using var invoiceStream = new MemoryStream(pdfBytes, writable: false);
+        var pdfUrl = await fileStorageService.UploadAsync(invoiceStream, fileName);
+
+        sale.InvoicePdfUrl = pdfUrl;
+        sale.InvoiceGeneratedAt = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+
+        logger.LogInformation("Invoice PDF generated for bill {BillNumber}. URL: {PdfUrl}", billNumber, pdfUrl);
+        return pdfUrl;
     }
 
     private async Task<byte[]?> TryDownloadImageAsync(string? photoUrl, CancellationToken cancellationToken)
@@ -116,5 +159,40 @@ public class InvoicePdfService(
 
         filePath = candidatePath;
         return true;
+    }
+
+    private static SaleInvoiceDto BuildInvoiceDto(Sale sale)
+    {
+        return new SaleInvoiceDto
+        {
+            BillNumber = sale.BillNumber,
+            SaleDate = sale.SaleDate,
+            DeliveryTime = sale.DeliveryTime,
+            CustomerName = sale.Customer.Name,
+            FatherName = null,
+            Phone = sale.Customer.Phone,
+            Address = sale.Customer.Address,
+            PhotoUrl = sale.Customer.PhotoUrl ?? string.Empty,
+            IdProofNumber = null,
+            CustomerPhone = sale.Customer.Phone,
+            CustomerAddress = sale.Customer.Address,
+            CustomerPhotoUrl = sale.Customer.PhotoUrl ?? string.Empty,
+            VehicleBrand = sale.Vehicle.Brand,
+            VehicleModel = sale.Vehicle.Model,
+            RegistrationNumber = sale.Vehicle.RegistrationNumber,
+            ChassisNumber = sale.Vehicle.ChassisNumber,
+            EngineNumber = sale.Vehicle.EngineNumber,
+            Colour = sale.Vehicle.Colour,
+            SellingPrice = sale.Vehicle.SellingPrice,
+            PaymentMode = sale.PaymentMode,
+            CashAmount = sale.CashAmount,
+            UpiAmount = sale.UpiAmount,
+            FinanceAmount = sale.FinanceAmount,
+            FinanceCompany = sale.FinanceCompany,
+            RcBookReceived = sale.RcBookReceived,
+            OwnershipTransferAccepted = sale.OwnershipTransferAccepted,
+            VehicleAcceptedInAsIsCondition = sale.VehicleAcceptedInAsIsCondition,
+            Profit = sale.Profit
+        };
     }
 }

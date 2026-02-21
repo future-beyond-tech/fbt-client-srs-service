@@ -2,6 +2,7 @@ using System.Data;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SRS.Application.DTOs;
 using SRS.Application.Interfaces;
 using SRS.Domain.Entities;
@@ -13,8 +14,8 @@ namespace SRS.Infrastructure.Services;
 public class SaleService(
     AppDbContext context,
     IInvoicePdfService invoicePdfService,
-    IFileStorageService fileStorageService,
-    IWhatsAppService whatsAppService) : ISaleService
+    IWhatsAppService whatsAppService,
+    ILogger<SaleService> logger) : ISaleService
 {
     private static readonly Regex E164PhoneRegex = new(@"^\+[1-9]\d{7,14}$", RegexOptions.Compiled);
 
@@ -95,9 +96,29 @@ public class SaleService(
             throw new InvalidOperationException("Vehicle already sold.", ex);
         }
 
+        string pdfUrl;
+        try
+        {
+            pdfUrl = await invoicePdfService.GenerateInvoiceAsync(sale.BillNumber);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Invoice generation failed for bill {BillNumber} after sale creation.",
+                sale.BillNumber);
+
+            throw new ApplicationException(
+                "Sale created but invoice PDF generation failed. Use process-invoice endpoint to retry.",
+                ex);
+        }
+
         return new SaleResponseDto
         {
             BillNumber = sale.BillNumber,
+            PdfUrl = pdfUrl,
+            InvoiceGeneratedAt = sale.InvoiceGeneratedAt,
+            InvoiceStatus = "Generated",
             VehicleId = vehicle.Id,
             Vehicle = $"{vehicle.Brand} {vehicle.Model}",
             CustomerName = customer.Name,
@@ -232,18 +253,17 @@ public class SaleService(
             throw new KeyNotFoundException("Invoice not found.");
         }
 
-        var mediaUrl = string.Empty;
+        var mediaUrl = invoiceResult.InvoicePdfUrl ?? string.Empty;
         var normalizedPhone = invoiceResult.CustomerPhone;
 
         try
         {
             normalizedPhone = NormalizePhone(invoiceResult.CustomerPhone);
 
-            var pdfBytes = await invoicePdfService.GenerateAsync(invoiceResult.Invoice, cancellationToken);
-            var fileName = $"invoice-{invoiceResult.Invoice.BillNumber}-{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
-
-            await using var invoiceStream = new MemoryStream(pdfBytes, writable: false);
-            mediaUrl = await fileStorageService.UploadAsync(invoiceStream, fileName, cancellationToken);
+            if (string.IsNullOrWhiteSpace(mediaUrl) || !invoiceResult.InvoiceGeneratedAt.HasValue)
+            {
+                mediaUrl = await invoicePdfService.GenerateInvoiceAsync(billNumber);
+            }
 
             await whatsAppService.SendInvoiceAsync(
                 normalizedPhone,
@@ -259,6 +279,11 @@ public class SaleService(
                 "Sent",
                 cancellationToken);
 
+            logger.LogInformation(
+                "Invoice sent on WhatsApp for bill {BillNumber} to phone {PhoneNumber}.",
+                billNumber,
+                normalizedPhone);
+
             return new SendInvoiceResponseDto
             {
                 BillNumber = invoiceResult.Invoice.BillNumber,
@@ -266,8 +291,10 @@ public class SaleService(
                 Status = "Sent"
             };
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to send invoice on WhatsApp for bill {BillNumber}.", billNumber);
+
             await SaveWhatsAppMessageAsync(
                 invoiceResult.CustomerId,
                 invoiceResult.SaleId,
@@ -278,6 +305,24 @@ public class SaleService(
 
             throw;
         }
+    }
+
+    public async Task<ProcessInvoiceResponseDto> ProcessInvoiceAsync(int billNumber, CancellationToken cancellationToken = default)
+    {
+        var sendInvoiceResult = await SendInvoiceAsync(billNumber, cancellationToken);
+        var generatedAt = await context.Sales
+            .AsNoTracking()
+            .Where(s => s.BillNumber == billNumber)
+            .Select(s => s.InvoiceGeneratedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return new ProcessInvoiceResponseDto
+        {
+            BillNumber = sendInvoiceResult.BillNumber,
+            PdfUrl = sendInvoiceResult.PdfUrl,
+            WhatsAppStatus = sendInvoiceResult.Status,
+            GeneratedAt = generatedAt
+        };
     }
 
     private IQueryable<SaleInvoiceQueryResult> BuildInvoiceQuery(int billNumber)
@@ -292,6 +337,8 @@ public class SaleService(
                 SaleId = s.Id,
                 CustomerId = s.CustomerId,
                 CustomerPhone = s.Customer.Phone,
+                InvoicePdfUrl = s.InvoicePdfUrl,
+                InvoiceGeneratedAt = s.InvoiceGeneratedAt,
                 Invoice = new SaleInvoiceDto
                 {
                     BillNumber = s.BillNumber,
@@ -418,9 +465,8 @@ public class SaleService(
 
         if (!normalized.StartsWith('+'))
         {
-            normalized = $"+{normalized}";
+            normalized = normalized.Length == 10 ? $"+91{normalized}" : $"+{normalized}";
         }
-
         if (!E164PhoneRegex.IsMatch(normalized))
         {
             throw new ArgumentException("Invalid customer phone format.");
@@ -526,6 +572,8 @@ public class SaleService(
         public int SaleId { get; init; }
         public Guid CustomerId { get; init; }
         public string CustomerPhone { get; init; } = null!;
+        public string? InvoicePdfUrl { get; init; }
+        public DateTime? InvoiceGeneratedAt { get; init; }
         public SaleInvoiceDto Invoice { get; init; } = null!;
     }
 }

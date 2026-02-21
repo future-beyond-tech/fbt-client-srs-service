@@ -1,23 +1,23 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using SRS.Application.Interfaces;
 
 namespace SRS.Infrastructure.Services;
 
 /// <summary>
 /// WhatsApp integration service using Meta Graph API.
-/// Implements template-based message sending for invoice notifications.
+/// Sends invoice PDFs as document messages.
 /// </summary>
 public class MetaWhatsAppService : IWhatsAppService
 {
     private readonly HttpClient _httpClient;
+    private readonly ILogger<MetaWhatsAppService> _logger;
     private readonly string _accessToken;
     private readonly string _phoneNumberId;
     private const string MetaGraphApiBaseUrl = "https://graph.facebook.com/v18.0";
-    private const string TemplateMessageEndpoint = "/messages";
-    private const string TemplateName = "invoice_notification";
-    private const string TemplateLanguage = "en";
+    private const string MessageEndpoint = "/messages";
 
     /// <summary>
     /// Initializes a new instance of the MetaWhatsAppService.
@@ -27,9 +27,13 @@ public class MetaWhatsAppService : IWhatsAppService
     /// <exception cref="InvalidOperationException">
     /// Thrown when WhatsApp configuration is missing or incomplete.
     /// </exception>
-    public MetaWhatsAppService(HttpClient httpClient, IConfiguration configuration)
+    public MetaWhatsAppService(
+        HttpClient httpClient,
+        IConfiguration configuration,
+        ILogger<MetaWhatsAppService> logger)
     {
         _httpClient = httpClient;
+        _logger = logger;
 
         _accessToken = configuration["WhatsApp:AccessToken"] ?? string.Empty;
         _phoneNumberId = configuration["WhatsApp:PhoneNumberId"] ?? string.Empty;
@@ -42,12 +46,12 @@ public class MetaWhatsAppService : IWhatsAppService
     }
 
     /// <summary>
-    /// Sends an invoice notification via WhatsApp using a pre-defined template.
+    /// Sends an invoice notification via WhatsApp with a PDF document link.
     /// </summary>
     /// <param name="toPhoneNumber">
     /// Recipient phone number in E.164 format without + (e.g., 919600433056).
     /// </param>
-    /// <param name="customerName">Name of the customer to be used in template variable.</param>
+    /// <param name="customerName">Customer name used in the document caption.</param>
     /// <param name="mediaUrl">URL of the invoice PDF to be sent.</param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>
@@ -69,13 +73,18 @@ public class MetaWhatsAppService : IWhatsAppService
         var formattedPhoneNumber = FormatPhoneNumber(toPhoneNumber);
 
         // Build the API endpoint URL
-        var apiUrl = $"{MetaGraphApiBaseUrl}/{_phoneNumberId}{TemplateMessageEndpoint}";
+        var apiUrl = $"{MetaGraphApiBaseUrl}/{_phoneNumberId}{MessageEndpoint}";
 
         // Create the request payload
-        var requestPayload = CreateTemplateMessagePayload(formattedPhoneNumber, customerName);
+        var requestPayload = CreateDocumentMessagePayload(formattedPhoneNumber, customerName, mediaUrl);
 
         // Make the API request
         var response = await SendMessageToMetaApiAsync(apiUrl, requestPayload, cancellationToken);
+
+        _logger.LogInformation(
+            "WhatsApp invoice message sent to {PhoneNumber} with media {MediaUrl}.",
+            formattedPhoneNumber,
+            mediaUrl);
 
         return response;
     }
@@ -118,36 +127,24 @@ public class MetaWhatsAppService : IWhatsAppService
     }
 
     /// <summary>
-    /// Creates the template message payload for the Meta API.
+    /// Creates the document message payload for the Meta API.
     /// </summary>
     /// <param name="phoneNumber">Formatted phone number.</param>
-    /// <param name="customerName">Customer name for template variable.</param>
+    /// <param name="customerName">Customer name used in the caption.</param>
+    /// <param name="mediaUrl">Public invoice PDF URL.</param>
     /// <returns>JSON string representing the message payload.</returns>
-    private string CreateTemplateMessagePayload(string phoneNumber, string customerName)
+    private static string CreateDocumentMessagePayload(string phoneNumber, string customerName, string mediaUrl)
     {
         var payload = new
         {
             messaging_product = "whatsapp",
             to = phoneNumber,
-            type = "template",
-            template = new
+            type = "document",
+            document = new
             {
-                name = TemplateName,
-                language = new
-                {
-                    code = TemplateLanguage
-                },
-                components = new object[]
-                {
-                    new
-                    {
-                        type = "body",
-                        parameters = new object[]
-                        {
-                            new { type = "text", text = customerName }
-                        }
-                    }
-                }
+                link = mediaUrl,
+                filename = $"invoice-{DateTime.UtcNow:yyyyMMddHHmmss}.pdf",
+                caption = $"Invoice for {customerName}"
             }
         };
 
@@ -186,6 +183,11 @@ public class MetaWhatsAppService : IWhatsAppService
 
             if (!response.IsSuccessStatusCode)
             {
+                _logger.LogError(
+                    "Meta WhatsApp API returned status {StatusCode}. Response: {ResponseContent}",
+                    (int)response.StatusCode,
+                    responseContent);
+
                 throw new InvalidOperationException(
                     $"Meta WhatsApp API returned non-success status {(int)response.StatusCode}. " +
                     $"Response: {responseContent}");
@@ -195,6 +197,7 @@ public class MetaWhatsAppService : IWhatsAppService
         }
         catch (HttpRequestException ex)
         {
+            _logger.LogError(ex, "Failed to communicate with Meta WhatsApp API.");
             throw new InvalidOperationException(
                 "Failed to communicate with Meta WhatsApp API. Please check your network connection and API configuration.",
                 ex);

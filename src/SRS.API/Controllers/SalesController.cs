@@ -43,6 +43,10 @@ public class SalesController(ISaleService saleService) : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+        catch (ApplicationException ex)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new { message = ex.Message });
+        }
         catch (InvalidOperationException ex)
         {
             return Conflict(new { message = ex.Message });
@@ -79,6 +83,28 @@ public class SalesController(ISaleService saleService) : ControllerBase
         try
         {
             var result = await saleService.SendInvoiceAsync(billNumber, cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("{billNumber}/process-invoice")]
+    public async Task<IActionResult> ProcessInvoice(int billNumber, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await saleService.ProcessInvoiceAsync(billNumber, cancellationToken);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)

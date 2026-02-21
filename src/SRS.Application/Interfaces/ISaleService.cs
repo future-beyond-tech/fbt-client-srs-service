@@ -14,4 +14,5 @@ public interface ISaleService
     Task<BillDetailDto?> GetByBillNumberAsync(int billNumber);
     Task<SaleInvoiceDto?> GetInvoiceAsync(int billNumber);
     Task<SendInvoiceResponseDto> SendInvoiceAsync(int billNumber, CancellationToken cancellationToken = default);
+    Task<ProcessInvoiceResponseDto> ProcessInvoiceAsync(int billNumber, CancellationToken cancellationToken = default);
 }

@@ -23,4 +23,5 @@ public class Vehicle
     public Purchase Purchase { get; set; } = null!;
     public Sale? Sale { get; set; }
     public ICollection<PurchaseExpense> PurchaseExpenses { get; set; } = new List<PurchaseExpense>();
+    public ICollection<VehiclePhoto> Photos { get; set; } = new List<VehiclePhoto>();
 }

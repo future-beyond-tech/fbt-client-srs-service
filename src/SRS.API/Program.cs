@@ -35,6 +35,7 @@ builder.Services.AddScoped<IDeliveryNoteSettingsService, DeliveryNoteSettingsSer
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 builder.Services.AddScoped<IPurchaseExpenseService, PurchaseExpenseService>();
 builder.Services.AddScoped<IVehicleService, VehicleService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IFinanceCompanyService, FinanceCompanyService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 builder.Services.AddScoped<ISearchService, SearchService>();

@@ -17,4 +17,5 @@ public class VehicleResponseDto
     public decimal SellingPrice { get; set; }
     public VehicleStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
+    public List<VehiclePhotoDto> Photos { get; set; } = [];
 }
