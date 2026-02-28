@@ -6,7 +6,7 @@ using SRS.Domain.Entities;
 using SRS.Domain.Enums;
 using SRS.Infrastructure.Persistence;
 
-namespace SRS.Application.Services;
+namespace SRS.Infrastructure.Services;
 
 public class PurchaseService(AppDbContext context) : IPurchaseService
 {
@@ -35,6 +35,7 @@ public class PurchaseService(AppDbContext context) : IPurchaseService
             RegistrationNumber = registrationNumber,
             ChassisNumber = string.IsNullOrWhiteSpace(dto.ChassisNumber) ? null : dto.ChassisNumber.Trim(),
             EngineNumber = string.IsNullOrWhiteSpace(dto.EngineNumber) ? null : dto.EngineNumber.Trim(),
+            Colour = string.IsNullOrWhiteSpace(dto.Colour) ? null : dto.Colour.Trim(),
             SellingPrice = dto.SellingPrice,
             Status = VehicleStatus.Available,
             CreatedAt = DateTime.UtcNow
@@ -83,6 +84,7 @@ public class PurchaseService(AppDbContext context) : IPurchaseService
                 Model = p.Vehicle.Model,
                 Year = p.Vehicle.Year,
                 RegistrationNumber = p.Vehicle.RegistrationNumber,
+                Colour = p.Vehicle.Colour,
                 SellingPrice = p.Vehicle.SellingPrice,
                 SellerName = p.SellerName,
                 SellerPhone = p.SellerPhone,
@@ -109,6 +111,7 @@ public class PurchaseService(AppDbContext context) : IPurchaseService
                 Model = p.Vehicle.Model,
                 Year = p.Vehicle.Year,
                 RegistrationNumber = p.Vehicle.RegistrationNumber,
+                Colour = p.Vehicle.Colour,
                 SellingPrice = p.Vehicle.SellingPrice,
                 SellerName = p.SellerName,
                 SellerPhone = p.SellerPhone,
@@ -131,6 +134,7 @@ public class PurchaseService(AppDbContext context) : IPurchaseService
             Model = purchase.Vehicle.Model,
             Year = purchase.Vehicle.Year,
             RegistrationNumber = purchase.Vehicle.RegistrationNumber,
+            Colour = purchase.Vehicle.Colour,
             SellingPrice = purchase.Vehicle.SellingPrice,
             SellerName = purchase.SellerName,
             SellerPhone = purchase.SellerPhone,

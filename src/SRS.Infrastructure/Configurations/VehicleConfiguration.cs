@@ -34,10 +34,21 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
         builder.Property(v => v.EngineNumber)
             .HasMaxLength(100);
 
+        builder.Property(v => v.Colour)
+            .HasMaxLength(50);
+
         builder.Property(v => v.SellingPrice)
             .HasPrecision(18, 2);
 
         builder.Property(v => v.CreatedAt)
             .IsRequired();
+
+        builder.Property(v => v.IsDeleted)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(v => v.UpdatedAt);
+
+        builder.HasIndex(v => v.IsDeleted);
     }
 }

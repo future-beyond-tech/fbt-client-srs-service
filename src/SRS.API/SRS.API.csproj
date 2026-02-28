@@ -5,20 +5,25 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PublishTrimmed>false</PublishTrimmed>
-    </PropertyGroup>
+      <UserSecretsId>df8dd173-3663-45e5-8ac9-8ac17a7103a1</UserSecretsId>
+  </PropertyGroup>
 
 
 
 
     <ItemGroup>
       <ProjectReference Include="..\SRS.Application\SRS.Application.csproj" />
+      <ProjectReference Include="..\SRS.Domain\SRS.Domain.csproj" />
       <ProjectReference Include="..\SRS.Infrastructure\SRS.Infrastructure.csproj" />
     </ItemGroup>
 
-   
 
     <ItemGroup>
+        <None Include="..\SRS.Infrastructure\Services\Pdf\Fonts\NotoSansTamil-Regular.ttf" Link="Infrastructure\Services\Pdf\Fonts\NotoSansTamil-Regular.ttf" CopyToOutputDirectory="Always" />
+    </ItemGroup>
+    <ItemGroup>
       <PackageReference Include="AutoMapper" Version="16.0.0" />
+      <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
       <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
         <PrivateAssets>all</PrivateAssets>
