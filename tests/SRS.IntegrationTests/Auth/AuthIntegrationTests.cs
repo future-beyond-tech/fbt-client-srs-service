@@ -7,12 +7,8 @@ using Xunit;
 namespace SRS.IntegrationTests.Auth;
 
 [Collection(PostgresCollection.Name)]
-public sealed class AuthIntegrationTests : IntegrationTestBase
+public sealed class AuthIntegrationTests(PostgresFixture postgres) : IntegrationTestBase(postgres)
 {
-    public AuthIntegrationTests(PostgresFixture postgres) : base(postgres)
-    {
-    }
-
     [Fact]
     public async Task Login_WithValidCredentials_Returns200AndToken()
     {

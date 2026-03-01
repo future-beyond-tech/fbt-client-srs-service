@@ -26,6 +26,7 @@ public class DeliveryNoteSettingsService(AppDbContext context) : IDeliveryNoteSe
         settings.ContactNumber = Normalize(dto.ContactNumber);
         settings.FooterText = Normalize(dto.FooterText);
         settings.TermsAndConditions = Normalize(dto.TermsAndConditions);
+        settings.TamilTermsAndConditions = Normalize(dto.TamilTermsAndConditions);
         settings.LogoUrl = Normalize(dto.LogoUrl);
         settings.SignatureLine = Normalize(dto.SignatureLine);
         settings.UpdatedAt = DateTime.UtcNow;
@@ -66,11 +67,12 @@ public class DeliveryNoteSettingsService(AppDbContext context) : IDeliveryNoteSe
         return new DeliveryNoteSettings
         {
             Id = SingletonSettingsId,
-            ShopName = "SRS Billing System",
-            ShopAddress = "Address not configured.",
+            ShopName = "SREE RAMALINGAM SONS",
+            ShopAddress = "H.O.: 154, Pycrofts Road, Royapettah (Opp. Sub Reg. Office) Chennai - 600 014",
             FooterText = "Thank you for your purchase.",
             TermsAndConditions =
                 "I confirm that I have received the vehicle in good condition and accepted all sale terms.",
+            TamilTermsAndConditions = null,
             SignatureLine = "Authorized Signature",
             UpdatedAt = DateTime.UtcNow
         };
@@ -78,15 +80,26 @@ public class DeliveryNoteSettingsService(AppDbContext context) : IDeliveryNoteSe
 
     private static DeliveryNoteSettingsDto Map(DeliveryNoteSettings settings)
     {
+        const string defaultShopName = "SREE RAMALINGAM SONS";
+        const string defaultAddress = "H.O.: 154, Pycrofts Road, Royapettah (Opp. Sub Reg. Office) Chennai - 600 014";
+
+        var address = settings.ShopAddress;
+        if (string.IsNullOrWhiteSpace(address) ||
+            address.Contains("not configured", StringComparison.OrdinalIgnoreCase))
+        {
+            address = defaultAddress;
+        }
+
         return new DeliveryNoteSettingsDto
         {
             Id = settings.Id,
-            ShopName = settings.ShopName,
-            ShopAddress = settings.ShopAddress,
+            ShopName = string.IsNullOrWhiteSpace(settings.ShopName) ? defaultShopName : settings.ShopName,
+            ShopAddress = address,
             GSTNumber = settings.GSTNumber,
             ContactNumber = settings.ContactNumber,
             FooterText = settings.FooterText,
             TermsAndConditions = settings.TermsAndConditions,
+            TamilTermsAndConditions = settings.TamilTermsAndConditions,
             LogoUrl = settings.LogoUrl,
             SignatureLine = settings.SignatureLine,
             UpdatedAt = settings.UpdatedAt
