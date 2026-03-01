@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<FinanceCompany> FinanceCompanies { get; set; }
     public DbSet<DeliveryNoteSettings> DeliveryNoteSettings { get; set; }
     public DbSet<WhatsAppMessage> WhatsAppMessages { get; set; }
+    public DbSet<ManualBill> ManualBills { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

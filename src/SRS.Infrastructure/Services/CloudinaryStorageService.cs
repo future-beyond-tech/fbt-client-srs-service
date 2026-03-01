@@ -1,26 +1,22 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SRS.Domain.Interfaces;
+using SRS.Infrastructure.Configuration;
 
 namespace SRS.Infrastructure.Services;
 
 /// <summary>
 /// Cloudinary implementation of <see cref="ICloudStorageService"/> for uploading delivery note PDFs.
-/// Uses folder "invoices" and resource type "raw". Returns secure URL.
+/// Uses folder from CloudinarySettings (or "invoices"). Returns HTTPS secure URL. Never logs API secret.
 /// </summary>
-public sealed class CloudinaryStorageService : ICloudStorageService
+public sealed class CloudinaryStorageService(
+    Cloudinary cloudinary,
+    IOptions<CloudinarySettings> settings,
+    ILogger<CloudinaryStorageService> logger) : ICloudStorageService
 {
-    private readonly Cloudinary _cloudinary;
-    private readonly ILogger<CloudinaryStorageService> _logger;
-
-    public CloudinaryStorageService(
-        Cloudinary cloudinary,
-        ILogger<CloudinaryStorageService> logger)
-    {
-        _cloudinary = cloudinary ?? throw new ArgumentNullException(nameof(cloudinary));
-        _logger = logger;
-    }
+    private readonly string _folder = string.IsNullOrWhiteSpace(settings.Value.Folder) ? "invoices" : settings.Value.Folder.Trim();
 
     public async Task<string> UploadPdfAsync(byte[] fileBytes, string fileName, CancellationToken ct = default)
     {
@@ -44,18 +40,18 @@ public sealed class CloudinaryStorageService : ICloudStorageService
         var uploadParams = new RawUploadParams
         {
             File = new FileDescription(safeFileName, stream),
-            Folder = "invoices",
+            Folder = _folder,
             PublicId = publicId,
             Overwrite = true,
         };
 
-        _logger.LogInformation("Uploading delivery note PDF to Cloudinary: {FileName}.", safeFileName);
+        logger.LogInformation("Uploading delivery note PDF to Cloudinary folder {Folder}: {FileName}.", _folder, safeFileName);
 
-        var result = await _cloudinary.UploadAsync(uploadParams);
+        var result = await cloudinary.UploadAsync(uploadParams);
 
         if (result.Error is not null)
         {
-            _logger.LogError(
+            logger.LogError(
                 "Cloudinary PDF upload failed for {FileName}. Error: {ErrorMessage}",
                 safeFileName,
                 result.Error.Message);
@@ -68,7 +64,12 @@ public sealed class CloudinaryStorageService : ICloudStorageService
             throw new InvalidOperationException("Cloudinary upload failed: secure URL was not returned.");
         }
 
-        _logger.LogInformation(
+        if (!secureUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Cloudinary upload failed: secure URL must be HTTPS.");
+        }
+
+        logger.LogInformation(
             "Cloudinary PDF upload succeeded for {FileName}. URL: {SecureUrl}",
             safeFileName,
             secureUrl);

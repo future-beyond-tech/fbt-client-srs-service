@@ -1,0 +1,13 @@
+# Override for local dev: API runs with dotnet watch (auto-rebuild on file changes).
+# Usage: docker compose up
+# For production-like run without override: docker compose -f docker-compose.yml up
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    command: dotnet watch run --project src/SRS.API/SRS.API.csproj
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development

@@ -9,7 +9,7 @@ namespace SRS.API.Controllers;
 [Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/sales")]
-public class SalesController(ISaleService saleService) : ControllerBase
+public class SalesController(ISaleService saleService, IInvoicePdfService invoicePdfService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetHistory(
@@ -75,6 +75,18 @@ public class SalesController(ISaleService saleService) : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    /// <summary>Get PDF file for the sale invoice. Optional ?download=true. Returns application/pdf; filename invoice-{billNumber}.pdf.</summary>
+    [HttpGet("{billNumber}/pdf")]
+    [Produces("application/pdf")]
+    [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetPdf(int billNumber, [FromQuery] bool download = true, CancellationToken cancellationToken = default)
+    {
+        var pdfBytes = await invoicePdfService.GetPdfBytesAsync(billNumber, cancellationToken);
+        return File(pdfBytes, "application/pdf", $"invoice-{billNumber}.pdf");
     }
 
     [HttpPost("{billNumber}/send-invoice")]

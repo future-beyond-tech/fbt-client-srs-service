@@ -5,13 +5,14 @@
 2. [Customers](#customers)
 3. [Vehicles](#vehicles)
 4. [Sales](#sales)
-5. [Purchases](#purchases)
-6. [Purchase Expenses](#purchase-expenses)
-7. [Finance Companies](#finance-companies)
-8. [Dashboard](#dashboard)
-9. [Search](#search)
-10. [Upload](#upload)
-11. [Delivery Note Settings](#delivery-note-settings)
+5. [Manual Billing](#manual-billing)
+6. [Purchases](#purchases)
+7. [Purchase Expenses](#purchase-expenses)
+8. [Finance Companies](#finance-companies)
+9. [Dashboard](#dashboard)
+10. [Search](#search)
+11. [Upload](#upload)
+12. [Delivery Note Settings](#delivery-note-settings)
 
 ---
 
@@ -1786,6 +1787,25 @@ No - Multiple identical requests send multiple invoices
 
 ---
 
+## Manual Billing
+
+Standalone bills not tied to vehicle inventory. Full details: **`docs/manual-billing.md`**.
+
+**Base path:** `/api/manual-bills`  
+**Auth:** Bearer token, role `Admin`
+
+| Method | Route | Description |
+|--------|--------|-------------|
+| POST | `/api/manual-bills` | Create manual bill. Returns `billNumber`, optional `pdfUrl`, `createdAt`. |
+| GET | `/api/manual-bills/{billNumber}` | Get full manual bill detail. |
+| GET | `/api/manual-bills/{billNumber}/invoice` | Get invoice DTO for PDF/preview. |
+| GET | `/api/manual-bills/{billNumber}/pdf` | Get or create PDF URL. `?redirect=true` redirects to PDF. |
+| POST | `/api/manual-bills/{billNumber}/send-invoice` | Generate PDF (if needed), send via WhatsApp. Returns `billNumber`, `pdfUrl`, `status`. |
+
+**Environment:** Cloudinary (PDF/photos), WhatsApp (Meta) keys required for PDF storage and send-invoice. See `docs/manual-billing.md` for env vars (placeholders only), local setup, troubleshooting, and production checklist.
+
+---
+
 ## Purchases
 
 ### POST Create Purchase
@@ -2772,8 +2792,8 @@ Yes - Multiple identical requests return the same data
 **Endpoint Name:** Global Search  
 **HTTP Method:** GET  
 **Route URL:** `/api/search`  
-**Short Description:** Global search across sales records  
-**Detailed Description:** Performs a comprehensive search across all sales transactions, matching against customer name, phone, vehicle model, registration number, and bill number.
+**Short Description:** Global search across sales and manual bills  
+**Detailed Description:** Performs a comprehensive search across sales and manual bills. Matches bill number, customer name, phone, vehicle/model/registration (sales), item description (manual bills). Returns a unified list with **`type`**: `"Sale"` or `"ManualBill"`. **Phone in results is masked** (e.g. last four digits). For manual bills, `vehicle` and `registrationNumber` are null.
 
 **Authentication Requirement:** Yes, Role: `Admin`
 
@@ -2801,12 +2821,22 @@ Yes - Multiple identical requests return the same data
 ```json
 [
   {
+    "type": "Sale",
     "billNumber": 10001,
     "customerName": "Rajesh Kumar",
-    "customerPhone": "9876543210",
+    "customerPhone": "******3210",
     "vehicle": "Hyundai Creta 2022",
     "registrationNumber": "DL01AB1234",
     "saleDate": "2026-02-20T10:00:00Z"
+  },
+  {
+    "type": "ManualBill",
+    "billNumber": 1,
+    "customerName": "Jane Smith",
+    "customerPhone": "******7654",
+    "vehicle": null,
+    "registrationNumber": null,
+    "saleDate": "2026-02-19T10:00:00Z"
   }
 ]
 ```
@@ -2815,12 +2845,13 @@ Yes - Multiple identical requests return the same data
 
 | Field Name | Data Type | Nullable | Description |
 |-----------|-----------|----------|-------------|
-| billNumber | Int32 | No | Sale bill number |
+| type | String | No | "Sale" or "ManualBill" |
+| billNumber | Int32 | No | Bill number |
 | customerName | String | No | Customer name |
-| customerPhone | String | No | Customer phone |
-| vehicle | String | No | Vehicle description |
-| registrationNumber | String | No | Vehicle registration |
-| saleDate | DateTime | No | Sale date |
+| customerPhone | String | No | Masked phone (e.g. ******3210) |
+| vehicle | String | Yes | Vehicle description (Sales); null for ManualBill |
+| registrationNumber | String | Yes | Registration (Sales); null for ManualBill |
+| saleDate | DateTime | No | Bill/sale date |
 
 ---
 
