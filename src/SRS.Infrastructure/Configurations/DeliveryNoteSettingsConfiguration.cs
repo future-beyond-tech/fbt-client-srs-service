@@ -31,6 +31,9 @@ public class DeliveryNoteSettingsConfiguration : IEntityTypeConfiguration<Delive
         builder.Property(x => x.TermsAndConditions)
             .HasMaxLength(2000);
 
+        builder.Property(x => x.TamilTermsAndConditions)
+            .HasMaxLength(4000);
+
         builder.Property(x => x.LogoUrl)
             .HasMaxLength(1000);
 

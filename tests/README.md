@@ -36,11 +36,29 @@ dotnet test fbt-client-srs-service.sln --filter "FullyQualifiedName~UnitTests"
 dotnet test fbt-client-srs-service.sln --filter "FullyQualifiedName~IntegrationTests"
 ```
 
+### PDF generation and upload (CI-safe, fake storage)
+
+```bash
+dotnet test --filter "FullyQualifiedName~PdfGenerationAndUploadTests"
+```
+
+These use a fake `ICloudStorageService` and fake `IWhatsAppService`; no real Cloudinary or WhatsApp calls.
+
+### Cloud storage smoke tests (optional, real Cloudinary)
+
+Only when Cloudinary env vars and `RUN_CLOUD_SMOKE_TESTS=true` are set (e.g. in CI secret store):
+
+```bash
+dotnet test --filter "FullyQualifiedName~PdfUploadVerificationTests"
+```
+
+See `docs/TEST_AUTOMATION_PDF_UPLOAD.md` for env vars and details.
+
 ## Structure
 
 - **`SRS.UnitTests`** – Validators, business logic, no external services. Uses xUnit + FluentAssertions; Moq only when needed.
 - **`SRS.IntegrationTests`** – API contract tests using `WebApplicationFactory`, Testcontainers Postgres, and test auth (no secrets).
-- **`SRS.Tests.Shared`** – Shared test infrastructure: `TestWebApplicationFactory`, `TestAuthHandler`, `TestDataSeeder`, HTTP client auth extensions.
+- **`SRS.Tests.Shared`** – Shared test infrastructure: `TestWebApplicationFactory`, `TestAuthHandler`, `TestDataSeeder`, `FakeCloudStorageService`, `FakeWhatsAppService`, HTTP client auth extensions.
 
 ## Security and data
 

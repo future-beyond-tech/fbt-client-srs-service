@@ -10,13 +10,14 @@
 3. [Purchase Endpoints](#purchase-endpoints)
 4. [Vehicle Endpoints](#vehicle-endpoints)
 5. [Sales Endpoints](#sales-endpoints)
-6. [Search Endpoints](#search-endpoints)
-7. [Dashboard Endpoints](#dashboard-endpoints)
-8. [Upload Endpoints](#upload-endpoints)
-9. [Error Handling](#error-handling)
-10. [Enums Reference](#enums-reference)
-11. [Authentication](#authentication)
-12. [Best Practices](#best-practices)
+6. [Manual Billing Endpoints](#manual-billing-endpoints)
+7. [Search Endpoints](#search-endpoints)
+8. [Dashboard Endpoints](#dashboard-endpoints)
+9. [Upload Endpoints](#upload-endpoints)
+10. [Error Handling](#error-handling)
+11. [Enums Reference](#enums-reference)
+12. [Authentication](#authentication)
+13. [Best Practices](#best-practices)
 
 ---
 
@@ -1997,6 +1998,48 @@ No request body required. Note: CancellationToken is handled by ASP.NET runtime.
 
 ---
 
+## Manual Billing Endpoints
+
+Manual bills are standalone bills not tied to vehicle inventory. All endpoints require **Admin** role.
+
+### POST /api/manual-bills
+
+**Route:** `POST /api/manual-bills`  
+**Description:** Create a manual bill. Payment split (cash + UPI + finance) must equal `amountTotal`. `photoUrl` is required (use `POST /api/upload` first).  
+**Request body:** `customerName`, `phone` (E.164 or 10-digit), `address` (optional), `photoUrl`, `itemDescription`, `amountTotal`, `paymentMode` (1=Cash, 2=UPI, 3=Finance), `cashAmount`, `upiAmount`, `financeAmount`, `financeCompany` (optional).  
+**Response 201:** `{ billNumber, pdfUrl?, createdAt }`.  
+**Errors:** 400 (validation), 401 (unauthorized).
+
+### GET /api/manual-bills/{billNumber}
+
+**Route:** `GET /api/manual-bills/{billNumber}`  
+**Description:** Get full manual bill detail.  
+**Response 200:** Bill fields including `billNumber`, `billType`, `customerName`, `phone`, `address`, `photoUrl`, `itemDescription`, `amountTotal`, payment fields, `createdAtUtc`, `updatedAtUtc`, `invoicePdfUrl`.  
+**Errors:** 404 (not found), 401.
+
+### GET /api/manual-bills/{billNumber}/invoice
+
+**Route:** `GET /api/manual-bills/{billNumber}/invoice`  
+**Description:** Get invoice DTO for PDF generation or preview.  
+**Response 200:** Invoice-shaped object (customer, item/vehicle placeholders, payment, etc.).  
+**Errors:** 404, 401.
+
+### GET /api/manual-bills/{billNumber}/pdf
+
+**Route:** `GET /api/manual-bills/{billNumber}/pdf` or `GET /api/manual-bills/{billNumber}/pdf?redirect=true`  
+**Description:** Get or create delivery-note PDF; returns its URL. Idempotent: reuses existing PDF if already generated.  
+**Response 200:** `{ pdfUrl }`. With `?redirect=true`, responds with 302 redirect to `pdfUrl`.  
+**Errors:** 404, 401.
+
+### POST /api/manual-bills/{billNumber}/send-invoice
+
+**Route:** `POST /api/manual-bills/{billNumber}/send-invoice`  
+**Description:** Generate PDF (if needed), store URL, send invoice to customer via WhatsApp. Idempotent: reuses existing PDF on repeated sends.  
+**Response 200:** `{ billNumber, pdfUrl, status }` (e.g. `status: "Sent"`).  
+**Errors:** 404 (bill not found), 400 (e.g. invalid phone), 502 (storage/WhatsApp failure), 401.
+
+---
+
 ## Search Endpoints
 
 ### GET /api/search
@@ -2011,10 +2054,10 @@ Global Search
 `/api/search`
 
 #### Short Description
-Performs a global search across sales transactions using a search query.
+Performs a global search across **sales and manual bills** using a search query.
 
 #### Detailed Description
-Searches across multiple fields including bill number, customer name, phone number, vehicle model, and registration number. Returns matching sales records. Useful for finding sales transactions when you have partial information about the customer or vehicle.
+Searches across sales (bill number, customer name, phone, vehicle brand/model/registration, date) and manual bills (bill number, customer name, phone, item description, date). Returns a unified list with a **`type`** field: `"Sale"` or `"ManualBill"`. **Phone numbers in results are masked** (e.g. last four digits visible). For manual bills, `vehicle` and `registrationNumber` are null.
 
 #### Authentication Requirement
 **Yes** - Requires Bearer Token with **Admin** role
@@ -2047,32 +2090,35 @@ GET /api/search?q=John
 ```json
 [
   {
+    "type": "Sale",
     "billNumber": 1001,
     "customerName": "John Doe",
-    "customerPhone": "9876543210",
+    "customerPhone": "******3210",
     "vehicle": "Toyota Fortuner 2022",
     "registrationNumber": "DL-01-AB-1234",
     "saleDate": "2026-02-20T14:30:00Z"
   },
   {
-    "billNumber": 1005,
-    "customerName": "John Smith",
-    "customerPhone": "9988776655",
-    "vehicle": "Maruti Swift 2021",
-    "registrationNumber": "DL-01-AB-9999",
-    "saleDate": "2026-02-18T10:00:00Z"
+    "type": "ManualBill",
+    "billNumber": 1,
+    "customerName": "Jane Smith",
+    "customerPhone": "******7654",
+    "vehicle": null,
+    "registrationNumber": null,
+    "saleDate": "2026-02-19T10:00:00Z"
   }
 ]
 ```
 
 | Field Name | Data Type | Nullable | Description |
 |---|---|---|---|
-| `billNumber` | Integer | No | Unique bill number of the sale |
+| `type` | String | No | Discriminator: `"Sale"` or `"ManualBill"` |
+| `billNumber` | Integer | No | Unique bill number |
 | `customerName` | String | No | Name of the customer |
-| `customerPhone` | String | No | Customer's phone number |
-| `vehicle` | String | No | Vehicle description (Brand Model Year) |
-| `registrationNumber` | String | No | Vehicle registration number |
-| `saleDate` | DateTime (ISO 8601) | No | Date and time of the sale |
+| `customerPhone` | String | No | Masked phone (e.g. ******3210); not full number |
+| `vehicle` | String | Yes | Vehicle description (Sales only); null for ManualBill |
+| `registrationNumber` | String | Yes | Vehicle registration (Sales only); null for ManualBill |
+| `saleDate` | DateTime (ISO 8601) | No | Bill/sale date |
 
 ---
 
@@ -2106,11 +2152,11 @@ GET /api/search?q=John
 - Missing Authorization header
 
 #### Business Rules
-- Searches across multiple fields (customer name, phone, vehicle model, registration)
-- Returns sales records matching the search criteria
-- Search is case-insensitive (typically)
-- No pagination implemented
-- Empty search term may return all or no results depending on implementation
+- Searches across sales and manual bills (bill number, customer name, phone, vehicle/item, date)
+- Returns unified results with `type`: "Sale" or "ManualBill"
+- Phone in response is masked (PII protection)
+- No pagination; result set capped (e.g. 50)
+- Empty search term returns empty list
 
 #### Side Effects
 - No database modifications

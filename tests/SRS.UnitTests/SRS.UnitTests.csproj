@@ -11,6 +11,7 @@
     <ProjectReference Include="..\SRS.Tests.Shared\SRS.Tests.Shared.csproj" />
     <ProjectReference Include="..\..\src\SRS.Application\SRS.Application.csproj" />
     <ProjectReference Include="..\..\src\SRS.Domain\SRS.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SRS.Infrastructure\SRS.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

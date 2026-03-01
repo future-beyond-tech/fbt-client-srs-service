@@ -27,6 +27,9 @@ public class UpdateDeliveryNoteSettingsDtoValidator : AbstractValidator<UpdateDe
         RuleFor(x => x.TermsAndConditions)
             .MaximumLength(2000);
 
+        RuleFor(x => x.TamilTermsAndConditions)
+            .MaximumLength(4000);
+
         RuleFor(x => x.LogoUrl)
             .MaximumLength(1000)
             .Must(BeValidAbsoluteUrl)

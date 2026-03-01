@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SRS.Application.Common;
 using SRS.Application.DTOs;
 using SRS.Application.Interfaces;
 using SRS.Domain.Entities;
@@ -282,7 +283,7 @@ public class SaleService(
             logger.LogInformation(
                 "Invoice sent on WhatsApp for bill {BillNumber} to phone {PhoneNumber}.",
                 billNumber,
-                normalizedPhone);
+                PhoneMask.MaskLastFour(normalizedPhone));
 
             return new SendInvoiceResponseDto
             {
